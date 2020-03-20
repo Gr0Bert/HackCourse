@@ -1,0 +1,15 @@
+.git/
+.vscode/
+.idea/
+target/
+.jvmopts
+.lock
+logs
+test-reports/
+.ensime*
+/GPATH
+/G*TAGS
+.deployment-history
+.overops*
+.dir-locals.el
+.sbt-hydra-history
