@@ -1,5 +1,6 @@
-package main
-import main.Parser.{AInstruction, CInstruction, Expression}
+package assembler
+
+import assembler.Parser.{AInstruction, CInstruction, Expression}
 
 object BinaryEncoder {
   private def binary(repr: Int, padding: Int): String = {
@@ -8,6 +9,15 @@ object BinaryEncoder {
   }
 
   val Null: Int = 0
+  val NullStr: String = "null"
+
+  object Address {
+    val toBinary = binary(_, 15)
+
+    def of(value: String): Either[String, String] = {
+      value.toIntOption.toRight(s"Can not translate $value to binary").map(toBinary).map(x => s"0$x")
+    }
+  }
 
   object Register {
     val M: Int = 1
@@ -77,7 +87,7 @@ object BinaryEncoder {
         case "1" => 63
         case "-1" => 58
         case "D" => 12
-        case "A" => 30
+        case "A" => 48
         case "!D" => 13
         case "!A" => 49
         case "-D" => 15
@@ -108,16 +118,16 @@ object BinaryEncoder {
     }
   }
 
-  def encode(expr: Expression): Either[String, String] = {
+  def encode(expr: Expression): Either[String, (Expression, String)] = {
     expr match {
-      case AInstruction(value) => Right(value)
+      case AInstruction(value) => Address.of(value).map(expr -> _)
       case CInstruction(dest, comp, jump) =>
         for {
-          d <- Register.of(dest.getOrElse(binary(Null, 3)))
+          d <- dest.map(Register.of).getOrElse(Right(binary(Null, 3)))
           c <- Compute.of(comp)
-          j <- Jump.of(jump.getOrElse(binary(Null, 3)))
+          j <- jump.map(Jump.of).getOrElse(Right(binary(Null, 3)))
         } yield {
-          s"$d$c$j"
+          expr -> s"111$c$d$j"
         }
     }
   }
