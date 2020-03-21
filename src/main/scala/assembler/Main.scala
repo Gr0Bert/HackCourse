@@ -12,16 +12,20 @@ package assembler
 
 object Main extends App {
   val add = """@2
+              |(Label)
               |D=A
-              |@3
+              |@LABEL
               |D=D+A
               |@0
               |M=D""".stripMargin
-  val singleExpressionWithLineSeparator = "D=D+A" + System.lineSeparator() + " "
-  val singleExpression = "D=D+A"
-  val parsingResult = Parser.parseRaw(singleExpressionWithLineSeparator)
+  val singleExpression = "(Label)"
+  val parsingResult = Parser.parseRaw(add)
    parsingResult match {
-      case Left(error) => println(error)
+      case Left((failureString, index, extra)) =>
+        println(index)
+        println(failureString)
+        println(extra.stack)
+        println(extra.trace(true))
       case Right((_, expressions)) =>
         val errorOrBinary = expressions.map(BinaryEncoder.encode)
         val errors = errorOrBinary.collect { case Left(error) => error }

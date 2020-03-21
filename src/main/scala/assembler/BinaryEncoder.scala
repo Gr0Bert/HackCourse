@@ -1,6 +1,6 @@
 package assembler
 
-import assembler.Parser.{AInstruction, CInstruction, Expression}
+import assembler.Parser.{AddressInstruction, CInstruction, Expression, Label}
 
 object BinaryEncoder {
   private def binary(repr: Int, padding: Int): String = {
@@ -13,10 +13,6 @@ object BinaryEncoder {
 
   object Address {
     val toBinary = binary(_, 15)
-
-    def of(value: String): Either[String, String] = {
-      value.toIntOption.toRight(s"Can not translate $value to binary").map(toBinary).map(x => s"0$x")
-    }
   }
 
   object Register {
@@ -120,7 +116,11 @@ object BinaryEncoder {
 
   def encode(expr: Expression): Either[String, (Expression, String)] = {
     expr match {
-      case AInstruction(value) => Address.of(value).map(expr -> _)
+      case i: AddressInstruction => i match {
+        case Parser.Constant(value) => Right(expr -> Address.toBinary(value))
+        case Parser.Reference(name) => Left(s"Error dereferencing `$name`. References are not supported yet")
+      }
+      case Label(name) => Left(s"Error label `$name`.Labels are not supported yet")
       case CInstruction(dest, comp, jump) =>
         for {
           d <- dest.map(Register.of).getOrElse(Right(binary(Null, 3)))
