@@ -1,6 +1,6 @@
 package assembler
 
-import fastparse._, NoWhitespace._
+import fastparse._, SingleLineWhitespace._
 
 object Parser {
   sealed trait Expression
@@ -19,12 +19,15 @@ object Parser {
     P(dest.? ~ comp ~ jmp.?).map {
       case (dest, comp, jmp) => CInstruction(dest, comp, jmp)
     }
+  private def lineSeparator[_: P] = P(System.lineSeparator())
   private def expr[_: P] = P(aInstruction | cInstruction)
-
+  private def exprList[_: P] = P(expr.rep(sep = lineSeparator) ~ End)
   private def onFailure(x: String, y: Int, z: Parsed.Extra) = Left((x, y, z))
-  private def onSuccess(exp: Expression, index: Int) = Right((index, exp))
+  private def onSuccess(exp: Seq[Expression], index: Int) = Right((index, exp))
 
-  def parseRaw(raw: String): Either[(String, Int, Parsed.Extra), (Int, Expression)] = {
-    parse(raw, expr(_)).fold(onFailure, onSuccess)
+  type FailureString = String
+  type Index = Int
+  def parseRaw(raw: String): Either[(FailureString, Index, Parsed.Extra), (Index, Seq[Expression])] = {
+    parse(raw, exprList(_)).fold(onFailure, onSuccess)
   }
 }
