@@ -12,9 +12,10 @@ object Parser {
   final case class Label(name: String) extends Expression
 
   private def alpha[_: P] = P(CharIn("a-zA-Z"))
+  private def underscoreOrDash[_: P] = P("_" | "-")
   private def number[_: P] = P(CharIn("0-9"))
   private def alphaNumeric[_: P] = P(alpha | number)
-  private def aInstruction[_: P]: P[AddressInstruction] = P("@" ~ alphaNumeric.rep.!).map{ value =>
+  private def aInstruction[_: P]: P[AddressInstruction] = P("@" ~ (alphaNumeric | underscoreOrDash).rep.!).map{ value =>
     value.toIntOption.map(Constant).getOrElse(Reference(value))
   }.log
 
@@ -27,7 +28,7 @@ object Parser {
     P(dest.? ~ comp ~ jmp.?).map {
       case (dest, comp, jmp) => CInstruction(dest, comp, jmp)
     }.log
-  private def label[_: P] = P("(" ~ alpha.rep.! ~ ")").map(Label).log
+  private def label[_: P] = P("(" ~ (alpha | underscoreOrDash).rep.! ~ ")").map(Label).log
   private def lineSeparator[_: P] = P(System.lineSeparator())
   private def expr[_: P] = P(aInstruction | cInstruction | label).log
   // here separator should  be done only with `....rep(sep = lineSeparator)`

@@ -11,13 +11,31 @@ package assembler
  */
 
 object Main extends App {
-  val add = """@2
-              |(LABEL)
-              |D=A
-              |@LABEL
-              |D=D+A
-              |@0
-              |M=D""".stripMargin
+  val add = """@R0
+              |D=M
+              |@R1
+              |D=D-M
+              |@OUTPUT_FIRST
+              |D;JGT
+              |@R1
+              |D=M
+              |@OUTPUT_D
+              |0;JMP
+              |(OUTPUT_FIRST)
+              |@R0
+              |D=M
+              |(OUTPUT_D)
+              |@R2
+              |M=D
+              |(INFINITE_LOOP)
+              |@INFINITE_LOOP
+              |0;JMP""".stripMargin
+  //todo:
+  // add comments
+  // ignore spaces
+  // empty last line
+  // default address constants
+  // dots in labels and references
   val singleExpression = "(Label)"
   val parsingResult = Parser.parseRaw(add)
    parsingResult match {
@@ -35,7 +53,7 @@ object Main extends App {
           errors.foreach(println)
         } else {
           val binary = errorOrBinary.collect { case Right((expression, binary)) => expression -> binary }
-          binary.foreach(println)
+          binary.foreach(x => println(x._2))
         }
   }
 }

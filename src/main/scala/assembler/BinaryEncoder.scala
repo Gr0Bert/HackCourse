@@ -114,7 +114,7 @@ object BinaryEncoder {
 
   def encode(expr: ReferenceResolver.Expression): Either[String, (ReferenceResolver.Expression, String)] = {
     expr match {
-      case ReferenceResolver.AddressConstant(value) => Right(expr -> Address.toBinary(value))
+      case ReferenceResolver.AddressConstant(value) => Right(expr -> s"0${Address.toBinary(value)}")
       case ReferenceResolver.Instruction(dest, comp, jump) =>
         for {
           d <- dest.map(Register.of).getOrElse(Right(binary(Null, 3)))
