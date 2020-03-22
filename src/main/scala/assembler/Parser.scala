@@ -3,7 +3,6 @@ package assembler
 import fastparse._
 import NoWhitespace._
 
-
 object Parser {
   sealed trait Expression
   sealed trait AddressInstruction extends Expression

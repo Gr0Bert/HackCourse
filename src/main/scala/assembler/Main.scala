@@ -27,13 +27,14 @@ object Main extends App {
         println(extra.stack)
         println(extra.trace(true))
       case Right((_, expressions)) =>
-        val errorOrBinary = expressions.map(BinaryEncoder.encode)
-        val errors = errorOrBinary.collect { case Left(error) => error }
-        if (errors.nonEmpty) {
-          errors.foreach(println)
-        } else {
-          val binary = errorOrBinary.collect { case Right((expression, binary)) => expression -> binary }
-          binary.foreach(println)
-        }
+          println(LabelsResolver.resolveLabels(expressions))
+//        val errorOrBinary = expressions.map(BinaryEncoder.encode)
+//        val errors = errorOrBinary.collect { case Left(error) => error }
+//        if (errors.nonEmpty) {
+//          errors.foreach(println)
+//        } else {
+//          val binary = errorOrBinary.collect { case Right((expression, binary)) => expression -> binary }
+//          binary.foreach(println)
+//        }
   }
 }
