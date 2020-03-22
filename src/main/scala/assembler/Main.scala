@@ -12,7 +12,7 @@ package assembler
 
 object Main extends App {
   val add = """@2
-              |(Label)
+              |(LABEL)
               |D=A
               |@LABEL
               |D=D+A
@@ -27,14 +27,15 @@ object Main extends App {
         println(extra.stack)
         println(extra.trace(true))
       case Right((_, expressions)) =>
-          println(LabelsResolver.resolveLabels(expressions))
-//        val errorOrBinary = expressions.map(BinaryEncoder.encode)
-//        val errors = errorOrBinary.collect { case Left(error) => error }
-//        if (errors.nonEmpty) {
-//          errors.foreach(println)
-//        } else {
-//          val binary = errorOrBinary.collect { case Right((expression, binary)) => expression -> binary }
-//          binary.foreach(println)
-//        }
+        val labelsResolverResult = LabelsResolver.resolveLabels(expressions)
+        val normalisedExpressions = ReferenceResolver.resolveReferences(labelsResolverResult)
+        val errorOrBinary = normalisedExpressions.map(BinaryEncoder.encode)
+        val errors = errorOrBinary.collect { case Left(error) => error }
+        if (errors.nonEmpty) {
+          errors.foreach(println)
+        } else {
+          val binary = errorOrBinary.collect { case Right((expression, binary)) => expression -> binary }
+          binary.foreach(println)
+        }
   }
 }

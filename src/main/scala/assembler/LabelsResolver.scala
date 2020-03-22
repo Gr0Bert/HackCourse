@@ -6,8 +6,6 @@ object LabelsResolver {
   final case class Reference(name: String) extends Expression
   final case class CInstruction(dest: Option[String], comp: String, jump: Option[String]) extends Expression
 
-  type Label = String
-  type Address = Int
   final case class LabelsResolverResult(expressions: Seq[Expression], context: Map[Label, Address])
 
   private def convertExpression(expr: Parser.Expression): Expression = {
@@ -18,7 +16,8 @@ object LabelsResolver {
       case Parser.Label(name) => throw new RuntimeException(s"Label $name encountered during labels elimination. Label should have been removed before this function call")
     }
   }
-  private def combine(state: (Map[Label, Address], List[Expression], Int), currentExpression: Parser.Expression): (Map[Label, Address], List[Expression], Int) = {
+
+  private def resolveLabels(state: (Map[Label, Address], List[Expression], Int), currentExpression: Parser.Expression): (Map[Label, Address], List[Expression], Int) = {
     val (context, expressions, currentInstruction) = state
     val nextInstruction = currentInstruction + 1
     currentExpression match {
@@ -30,9 +29,10 @@ object LabelsResolver {
         (context, expr :: expressions, nextInstruction)
     }
   }
+
   def resolveLabels(expressions: Seq[Parser.Expression]): LabelsResolverResult = {
     val (context, result, _) = expressions.toList
-      .foldLeft((Map.empty[Label, Address], List.empty[Expression], 0))(combine)
+      .foldLeft((Map.empty[Label, Address], List.empty[Expression], 0))(resolveLabels)
     LabelsResolverResult(result.reverse, context)
   }
 }
