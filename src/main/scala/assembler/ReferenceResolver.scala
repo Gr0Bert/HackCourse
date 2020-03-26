@@ -26,7 +26,7 @@ object ReferenceResolver {
           case None =>
             val constant = AddressConstant(freeAddress)
             val nextFreeAddress = freeAddress + 1
-            (context, constant :: expressions, nextFreeAddress)
+            (context + ((name -> freeAddress)), constant :: expressions, nextFreeAddress)
         }
       case other =>
         val expression = convert(other)
@@ -37,7 +37,7 @@ object ReferenceResolver {
   def resolveReferences(labelsResolverResult: LabelsResolverResult): Seq[Expression] = {
     val context = labelsResolverResult.context
     val expressions = labelsResolverResult.expressions
-    val freeAddress = 15
+    val freeAddress = 16
     val (_, expressionsWithoutReferences, _) = expressions.foldLeft((context, List.empty[Expression], freeAddress))(resolveReferences)
     expressionsWithoutReferences.reverse
   }
