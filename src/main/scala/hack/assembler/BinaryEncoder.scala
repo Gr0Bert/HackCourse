@@ -1,4 +1,4 @@
-package assembler
+package hack.assembler
 
 object BinaryEncoder {
   private def binary(repr: Int, padding: Int): String = {

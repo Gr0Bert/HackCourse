@@ -1,4 +1,4 @@
-package assembler
+package hack.assembler
 
 object LabelsResolver {
   sealed trait Expression

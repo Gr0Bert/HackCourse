@@ -1,6 +1,6 @@
-package assembler
+package hack.assembler
 
-import assembler.LabelsResolver.LabelsResolverResult
+import hack.assembler.LabelsResolver.LabelsResolverResult
 
 object ReferenceResolver {
   sealed trait Expression

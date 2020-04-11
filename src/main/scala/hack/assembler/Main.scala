@@ -1,4 +1,4 @@
-package assembler
+package hack.assembler
 
 import java.nio.file.Path
 
