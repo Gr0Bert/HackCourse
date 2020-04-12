@@ -4,14 +4,8 @@ import fastparse._
 
 object Parser {
   import NoWhitespace._
-
-  sealed trait Expression
-  sealed trait AddressInstruction extends Expression
-  final case class Constant(value: Int) extends AddressInstruction
-  final case class Reference(name: String) extends AddressInstruction
-  final case class CInstruction(dest: Option[String], comp: String, jump: Option[String]) extends Expression
-  final case class Label(name: String) extends Expression
-
+  import Assembly._
+  
   private def alpha[_: P] = P(CharIn("a-zA-Z"))
   private def underscoreOrDash[_: P] = P("_" | "-")
   private def dot[_: P] = P(".")

@@ -8,20 +8,20 @@ object LabelsResolver {
 
   final case class LabelsResolverResult(expressions: Seq[Expression], context: Map[Label, Address])
 
-  private def convertExpression(expr: Parser.Expression): Expression = {
+  private def convertExpression(expr: Assembly.Expression): Expression = {
     expr match {
-      case Parser.Constant(value) => Constant(value)
-      case Parser.Reference(name) => Reference(name)
-      case Parser.CInstruction(dest, comp, jump) => CInstruction(dest, comp, jump)
-      case Parser.Label(name) => throw new RuntimeException(s"Label $name encountered during labels elimination. Label should have been removed before this function call")
+      case Assembly.Constant(value) => Constant(value)
+      case Assembly.Reference(name) => Reference(name)
+      case Assembly.CInstruction(dest, comp, jump) => CInstruction(dest, comp, jump)
+      case Assembly.Label(name) => throw new RuntimeException(s"Label $name encountered during labels elimination. Label should have been removed before this function call")
     }
   }
 
-  private def resolveLabels(state: (Map[Label, Address], List[Expression], Int), currentExpression: Parser.Expression): (Map[Label, Address], List[Expression], Int) = {
+  private def resolveLabels(state: (Map[Label, Address], List[Expression], Int), currentExpression: Assembly.Expression): (Map[Label, Address], List[Expression], Int) = {
     val (context, expressions, currentInstruction) = state
     val nextInstruction = currentInstruction + 1
     currentExpression match {
-      case Parser.Label(name) =>
+      case Assembly.Label(name) =>
         val newContext = context + (name -> currentInstruction)
         (newContext, expressions, currentInstruction)
       case other =>
@@ -56,7 +56,7 @@ object LabelsResolver {
     "KBD" -> 24576,
   )
 
-  def resolveLabels(expressions: Seq[Parser.Expression]): LabelsResolverResult = {
+  def resolveLabels(expressions: Seq[Assembly.Expression]): LabelsResolverResult = {
     val (context, result, _) = expressions.toList
       .foldLeft((defaultContext, List.empty[Expression], 0))(resolveLabels)
     LabelsResolverResult(result.reverse, context)
