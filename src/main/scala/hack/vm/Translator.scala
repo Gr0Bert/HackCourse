@@ -47,7 +47,7 @@ object Translator extends App {
     )
   }
 
-  def performBinaryBoolean(idx: Int) = {
+  def performBinaryBoolean(idx: Int, jumpForTrue: String) = {
     val uniqueLabel = s"UNIQUE_LABEL_$idx"
     List(
       Reference("SP"),
@@ -57,7 +57,7 @@ object Translator extends App {
       Reference("SP"),
       CInstruction(M, "M-1", None),
       CInstruction(A, M, None),
-      CInstruction(M, "M-D", None),
+      CInstruction(M, "M-D", None), // binary operation
       Reference("SP"),
       CInstruction(M, "M+1", None),
       Reference(uniqueLabel),
@@ -70,7 +70,7 @@ object Translator extends App {
       CInstruction(A, D, None),
       CInstruction(D, M, None),
       Reference("PUSH_TRUE"),
-      CInstruction(None, "D", Some("JLT")),
+      CInstruction(None, "D", Some(jumpForTrue)),
       Reference("PUSH_FALSE"),
       CInstruction(None, "0", Some("JMP")),
       Label("PUSH_TRUE"),
@@ -103,9 +103,9 @@ object Translator extends App {
         case Arithmetic.Add => performBinaryArithmetic(CInstruction(M, s"D+M", None))
         case Arithmetic.Sub => performBinaryArithmetic(CInstruction(M, "M-D", None))
         case Arithmetic.Neg => ???
-        case Arithmetic.Eq => ???
-        case Arithmetic.Gt => ???
-        case Arithmetic.Lt => performBinaryBoolean(idx)
+        case Arithmetic.Eq => performBinaryBoolean(idx, "JEQ")
+        case Arithmetic.Gt => performBinaryBoolean(idx, "JGT")
+        case Arithmetic.Lt => performBinaryBoolean(idx, "JLT")
         case Arithmetic.And => performBinaryArithmetic(CInstruction(M, "D&M", None))
         case Arithmetic.Or => performBinaryArithmetic(CInstruction(M, "D|M", None))
         case Arithmetic.Not => ???
@@ -244,8 +244,8 @@ object Translator extends App {
   )
 
   val lessThanTest = List(
-    Push(Segment.Constant, 5),
     Push(Segment.Constant, 6),
+    Push(Segment.Constant, 5),
     Lt
   )
 
