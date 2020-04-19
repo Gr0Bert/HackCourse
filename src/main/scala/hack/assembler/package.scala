@@ -14,7 +14,7 @@ package object assembler {
       override def toString: assembler.Label = s"@$name"
     }
     final case class CInstruction(dest: Option[String], comp: String, jump: Option[String]) extends Expression {
-      override def toString: assembler.Label = s"${dest.getOrElse("")}=${comp}${jump.map(j => s";$j").getOrElse("")}"
+      override def toString: assembler.Label = s"${dest.map(d => s"$d=").getOrElse("")}$comp${jump.map(j => s";$j").getOrElse("")}"
     }
     final case class Label(name: String) extends Expression {
       override def toString: assembler.Label = s"($name)"

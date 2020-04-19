@@ -47,7 +47,57 @@ object Translator extends App {
     )
   }
 
-  def eval(command: Command, filename: String): List[Expression] = {
+  def performBinaryBoolean(idx: Int) = {
+    val uniqueLabel = s"UNIQUE_LABEL_$idx"
+    List(
+      Reference("SP"),
+      CInstruction(M, "M-1", None),
+      CInstruction(A, M, None),
+      CInstruction(D, M, None),
+      Reference("SP"),
+      CInstruction(M, "M-1", None),
+      CInstruction(A, M, None),
+      CInstruction(M, "M-D", None),
+      Reference("SP"),
+      CInstruction(M, "M+1", None),
+      Reference(uniqueLabel),
+      CInstruction(D, A, None),
+      Reference("SP"),
+      CInstruction(A, M, None),
+      CInstruction(M, D, None),
+      Reference("SP"),
+      CInstruction(D, "M-1", None),
+      CInstruction(A, D, None),
+      CInstruction(D, M, None),
+      Reference("PUSH_TRUE"),
+      CInstruction(None, "D", Some("JLT")),
+      Reference("PUSH_FALSE"),
+      CInstruction(None, "0", Some("JMP")),
+      Label("PUSH_TRUE"),
+      Reference("SP"),
+      CInstruction(A, M, None),
+      CInstruction(D, M, None), // save return address
+      Reference("SP"),
+      CInstruction(Some("AM"), "M-1", None),
+      CInstruction(M, "1", None),
+      CInstruction(A, D, None),
+      CInstruction(None, "0", Some("JMP")),
+      Reference("PUSH_FALSE"),
+      Reference("SP"),
+      CInstruction(A, M, None),
+      CInstruction(D, M, None), // save return address
+      Reference("SP"),
+      CInstruction(Some("AM"), "M-1", None),
+      CInstruction(M, "0", None),
+      CInstruction(A, D, None),
+      CInstruction(None, "0", Some("JMP")),
+      Label(uniqueLabel),
+      Reference("SP"),
+      CInstruction(M, "M+1", None),
+    )
+  }
+
+  def eval(idx: Int, command: Command, filename: String): List[Expression] = {
     command match {
       case arithmetic: StackMachine.Arithmetic => arithmetic match {
         case Arithmetic.Add => performBinaryArithmetic(CInstruction(M, s"D+M", None))
@@ -55,7 +105,7 @@ object Translator extends App {
         case Arithmetic.Neg => ???
         case Arithmetic.Eq => ???
         case Arithmetic.Gt => ???
-        case Arithmetic.Lt => ???
+        case Arithmetic.Lt => performBinaryBoolean(idx)
         case Arithmetic.And => performBinaryArithmetic(CInstruction(M, "D&M", None))
         case Arithmetic.Or => performBinaryArithmetic(CInstruction(M, "D|M", None))
         case Arithmetic.Not => ???
@@ -192,11 +242,19 @@ object Translator extends App {
     Push(Segment.Temp, 6),
     Add,
   )
-  p.foreach{ command =>
-    println{
-      s"""// $command
-         |${eval(command, "Main.vm").mkString(System.lineSeparator())}
-         |""".stripMargin
-    }
+
+  val lessThanTest = List(
+    Push(Segment.Constant, 5),
+    Push(Segment.Constant, 6),
+    Lt
+  )
+
+  lessThanTest.zipWithIndex.foreach{
+    case (command, idx) =>
+      println{
+        s"""// $command
+           |${eval(idx, command, "Main.vm").mkString(System.lineSeparator())}
+           |""".stripMargin
+      }
   }
 }
