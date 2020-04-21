@@ -50,14 +50,18 @@ object Translator extends App {
   def performBinaryBoolean(idx: Int, jumpForTrue: String) = {
     val uniqueLabel = s"UNIQUE_LABEL_$idx"
     List(
+      // pop top value to D
       Reference("SP"),
       CInstruction(M, "M-1", None),
       CInstruction(A, M, None),
       CInstruction(D, M, None),
+      // select top - 1
       Reference("SP"),
       CInstruction(M, "M-1", None),
       CInstruction(A, M, None),
-      CInstruction(M, "M-D", None), // binary operation
+      // perform operation and save result `in place`
+      CInstruction(M, "M-D", None),
+      // push return address
       Reference("SP"),
       CInstruction(M, "M+1", None),
       Reference(uniqueLabel),
@@ -65,32 +69,44 @@ object Translator extends App {
       Reference("SP"),
       CInstruction(A, M, None),
       CInstruction(M, D, None),
+      // go to binary operation result
       Reference("SP"),
-      CInstruction(D, "M-1", None),
-      CInstruction(A, D, None),
+      CInstruction(M, "M-1", None),
+      CInstruction(A, M, None),
       CInstruction(D, M, None),
+      Reference("SP"),
+      CInstruction(M, "M+1", None),
+      // if result < 0
       Reference("PUSH_TRUE"),
       CInstruction(None, "D", Some(jumpForTrue)),
+      // else
       Reference("PUSH_FALSE"),
       CInstruction(None, "0", Some("JMP")),
+      // push `true` procedure
       Label("PUSH_TRUE"),
       Reference("SP"),
       CInstruction(A, M, None),
       CInstruction(D, M, None), // save return address
       Reference("SP"),
-      CInstruction(Some("AM"), "M-1", None),
+      CInstruction(Some("M"), "M-1", None),
+      CInstruction(A, M, None),
       CInstruction(M, "1", None),
+      // jump to return address
       CInstruction(A, D, None),
       CInstruction(None, "0", Some("JMP")),
-      Reference("PUSH_FALSE"),
+      // push `false` procedure
+      Label("PUSH_FALSE"),
       Reference("SP"),
       CInstruction(A, M, None),
       CInstruction(D, M, None), // save return address
       Reference("SP"),
-      CInstruction(Some("AM"), "M-1", None),
+      CInstruction(Some("M"), "M-1", None),
+      CInstruction(A, M, None),
       CInstruction(M, "0", None),
+      // jump to return address
       CInstruction(A, D, None),
       CInstruction(None, "0", Some("JMP")),
+      // program continuation
       Label(uniqueLabel),
       Reference("SP"),
       CInstruction(M, "M+1", None),
@@ -244,8 +260,8 @@ object Translator extends App {
   )
 
   val lessThanTest = List(
-    Push(Segment.Constant, 6),
     Push(Segment.Constant, 5),
+    Push(Segment.Constant, 6),
     Lt
   )
 
