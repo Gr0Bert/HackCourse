@@ -118,13 +118,31 @@ object Translator extends App {
       case arithmetic: StackMachine.Arithmetic => arithmetic match {
         case Arithmetic.Add => performBinaryArithmetic(CInstruction(M, s"D+M", None))
         case Arithmetic.Sub => performBinaryArithmetic(CInstruction(M, "M-D", None))
-        case Arithmetic.Neg => ???
+        case Arithmetic.Neg =>
+          List(
+            Reference("SP"),
+            CInstruction(M, "M-1", None),
+            CInstruction(A, M, None),
+            CInstruction(M, "-M", None),
+            Reference("SP"),
+            CInstruction(M, "M+1", None),
+          )
         case Arithmetic.Eq => performBinaryBoolean(idx, "JEQ")
         case Arithmetic.Gt => performBinaryBoolean(idx, "JGT")
         case Arithmetic.Lt => performBinaryBoolean(idx, "JLT")
         case Arithmetic.And => performBinaryArithmetic(CInstruction(M, "D&M", None))
         case Arithmetic.Or => performBinaryArithmetic(CInstruction(M, "D|M", None))
-        case Arithmetic.Not => ???
+        case Arithmetic.Not =>
+          List(
+            Reference("SP"),
+            CInstruction(M, "M-1", None),
+            CInstruction(A, M, None),
+            CInstruction(M, "!M", None),
+            CInstruction(M, "M+1", None),
+            CInstruction(M, "M+1", None),
+            Reference("SP"),
+            CInstruction(M, "M+1", None),
+          )
       }
       case access: StackMachine.MemoryAccess => access match {
         case MemoryAccess.Pop(segment, address) => segment match {
@@ -260,12 +278,17 @@ object Translator extends App {
   )
 
   val lessThanTest = List(
-    Push(Segment.Constant, 5),
     Push(Segment.Constant, 6),
-    Lt
+    Push(Segment.Constant, 5),
+    Gt
   )
 
-  lessThanTest.zipWithIndex.foreach{
+  val notTest = List(
+    Push(Segment.Constant, 12),
+    Neg
+  )
+
+  notTest.zipWithIndex.foreach{
     case (command, idx) =>
       println{
         s"""// $command
