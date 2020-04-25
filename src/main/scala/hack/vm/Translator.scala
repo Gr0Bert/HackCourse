@@ -1,6 +1,6 @@
 package hack.vm
 
-import hack.vm.StackMachine.{Arithmetic, Command, MemoryAccess}
+import hack.vm.StackMachine.{Arithmetic, Branching, Command, MemoryAccess}
 import hack.vm.StackMachine.MemoryAccess.{Addressable, Segment}
 
 object Translator extends App {
@@ -243,7 +243,18 @@ object Translator extends App {
           }
         }
       }
-      case _: StackMachine.Branching => ???
+      case branch: StackMachine.Branching => branch match {
+        case Branching.Label(label) => List(Label(label))
+        case Branching.GoTo(label) => List(Reference(label), CInstruction(None, "0", Some("JMP")))
+        case Branching.IfGoTo(label) => List(
+          Reference("SP"),
+          CInstruction(M, "M-1", None),
+          CInstruction(A, M, None),
+          CInstruction(D, M, None),
+          Reference(label),
+          CInstruction(None, D, Some("JGT")),
+        )
+      }
       case _: StackMachine.Function => ???
     }
   }
@@ -288,7 +299,17 @@ object Translator extends App {
     Neg
   )
 
-  notTest.zipWithIndex.foreach{
+  val branchTest = List(
+    StackMachine.Branching.Label("START"),
+    Push(Segment.Constant, 11),
+    Push(Segment.Constant, 10),
+    Lt,
+    StackMachine.Branching.IfGoTo("START"),
+    StackMachine.Branching.Label("END"),
+    StackMachine.Branching.GoTo("END"),
+  )
+
+  branchTest.zipWithIndex.foreach{
     case (command, idx) =>
       println{
         s"""// $command
