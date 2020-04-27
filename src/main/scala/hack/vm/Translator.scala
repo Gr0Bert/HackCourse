@@ -1,6 +1,6 @@
 package hack.vm
 
-import hack.vm.StackMachine.{Arithmetic, Branching, Command, MemoryAccess}
+import hack.vm.StackMachine.{Arithmetic, Branching, Command, Function, MemoryAccess}
 import hack.vm.StackMachine.MemoryAccess.{Addressable, Segment}
 
 object Translator extends App {
@@ -255,7 +255,59 @@ object Translator extends App {
           CInstruction(None, D, Some("JGT")),
         )
       }
-      case _: StackMachine.Function => ???
+      case function: StackMachine.Function => function match {
+        case Function.Def(_, _) => ???
+        case Function.Call(name, args) =>
+          val returnLabel = filename.replace(".vm", "") + "$" + name + s".$idx"
+          def pushFromLabel(labelName: String) = {
+            List(
+              Reference(labelName),
+              CInstruction(D, M, None),
+              Reference("SP"),
+              CInstruction(A, M, None),
+              CInstruction(M, D, None),
+              Reference("SP"),
+              CInstruction(M, "M+1", None),
+            )
+          }
+          val pushReturnAddress = List(
+            // push return address
+            Reference(returnLabel),
+            CInstruction(D, A, None),
+            Reference("SP"),
+            CInstruction(A, M, None),
+            CInstruction(M, D, None),
+            Reference("SP"),
+            CInstruction(M, "M+1", None),
+          )
+          val pushLcl = pushFromLabel("LCL")
+          val pushArg = pushFromLabel("ARG")
+          val pushThis = pushFromLabel("THIS")
+          val pushThat = pushFromLabel("THAT")
+          val setNewArg = List(
+            Constant(5 + args),
+            CInstruction(D, A, None),
+            Reference("SP"),
+            CInstruction(D, "M-D", None),
+            Reference("ARG"),
+            CInstruction(M, D, None),
+          )
+          val setLclToSP = List(
+            Reference("SP"),
+            CInstruction(D, M, None),
+            Reference("LCL"),
+            CInstruction(M, D, None),
+          )
+          pushReturnAddress ++
+            pushLcl ++
+            pushArg ++
+            pushThis ++
+            pushThat ++
+            setNewArg ++
+            setLclToSP ++
+            eval(idx, Branching.GoTo(filename.replace(".vm", "") + "$" + name), filename) :+ Label(returnLabel)
+        case Function.Return => ???
+      }
     }
   }
   import MemoryAccess._
@@ -309,7 +361,13 @@ object Translator extends App {
     StackMachine.Branching.GoTo("END"),
   )
 
-  branchTest.zipWithIndex.foreach{
+  val callTest = List(
+    Push(Segment.Constant, 2),
+    Push(Segment.Constant, 4),
+    Function.Call("foo", 2)
+  )
+
+  callTest.zipWithIndex.foreach{
     case (command, idx) =>
       println{
         s"""// $command
