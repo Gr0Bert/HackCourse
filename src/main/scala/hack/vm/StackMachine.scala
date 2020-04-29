@@ -45,7 +45,7 @@ object StackMachine extends App {
 
   sealed trait Function extends Command
   object Function {
-    final case class Def(name: String, vars: List[Any]) extends Function
+    final case class Def(name: String) extends Function
     final case class Call(name: String, args: Int) extends Function
     final case object Return extends Function
   }

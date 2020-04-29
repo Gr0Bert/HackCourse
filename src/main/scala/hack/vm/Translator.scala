@@ -256,9 +256,10 @@ object Translator extends App {
         )
       }
       case function: StackMachine.Function => function match {
-        case Function.Def(_, _) => ???
+        case Function.Def(name) => List(Label(mkFunctionPrefix(filename, name)))
         case Function.Call(name, args) =>
-          val returnLabel = filename.replace(".vm", "") + "$" + name + s".$idx"
+          val functionLabel = mkFunctionPrefix(filename, name)
+          val returnLabel = s"$functionLabel.$idx"
           def pushFromLabel(labelName: String) = {
             List(
               Reference(labelName),
@@ -305,11 +306,70 @@ object Translator extends App {
             pushThat ++
             setNewArg ++
             setLclToSP ++
-            eval(idx, Branching.GoTo(filename.replace(".vm", "") + "$" + name), filename) :+ Label(returnLabel)
-        case Function.Return => ???
+            eval(idx, Branching.GoTo(functionLabel), filename) :+ Label(returnLabel)
+        case Function.Return =>
+          val placeReturnToArg = List(
+            AtSP,
+            CInstruction(M, "M-1", None),
+            CInstruction(A, M),
+            CInstruction(D, M),
+            AtArg,
+            CInstruction(A, M),
+            CInstruction(M, D),
+            AtArg,
+            CInstruction(D, M),
+            AtSP,
+            CInstruction(M, D),
+            AtSP,
+            CInstruction(M, "M+1")
+          )
+          val putReturnOnStack = List(
+            Constant(5),
+            CInstruction(D, A),
+            AtLCL,
+            CInstruction(D, "M-D"),
+            CInstruction(A, D),
+            CInstruction(D, M),
+            AtSP,
+            CInstruction(A, M),
+            CInstruction(M, D),
+          )
+          val goToReturn = List(
+            AtSP,
+            CInstruction(A, M),
+            CInstruction(D, M),
+            CInstruction(A, D),
+            CInstruction(None, "0", Some("JMP")),
+          )
+          def restore(index: Int, name: String) = List(
+            Constant(index),
+            CInstruction(D, A),
+            AtLCL,
+            CInstruction(D, "M-D"),
+            CInstruction(A, D),
+            CInstruction(D, M),
+            Reference(name),
+            CInstruction(M, D),
+          )
+
+          placeReturnToArg ++
+          restore(1, "THAT") ++
+          restore(2, "THIS") ++
+          restore(3, "ARG") ++
+          putReturnOnStack ++
+          restore(4, "LCL") ++
+          goToReturn
       }
     }
   }
+
+  private val AtSP = Reference("SP")
+  private val AtArg = Reference("ARG")
+  private val AtLCL = Reference("LCL")
+
+  private def mkFunctionPrefix(filename: String, functionName: String) =
+    filename.replace(".vm", "") + "$" + functionName
+
   import MemoryAccess._
   import hack.vm.StackMachine.Arithmetic._
   val p = List(
@@ -364,7 +424,10 @@ object Translator extends App {
   val callTest = List(
     Push(Segment.Constant, 2),
     Push(Segment.Constant, 4),
-    Function.Call("foo", 2)
+    Function.Call("foo", 2),
+    Function.Def("foo"),
+    Push(Segment.Constant, 42),
+    Function.Return
   )
 
   callTest.zipWithIndex.foreach{
