@@ -256,7 +256,10 @@ object Translator extends App {
         )
       }
       case function: StackMachine.Function => function match {
-        case Function.Def(name) => List(Label(mkFunctionPrefix(filename, name)))
+        case Function.Def(name, localVars) =>
+          Label(mkFunctionPrefix(filename, name)) +:
+          List.fill(localVars)(MemoryAccess.Push(Segment.Constant, 0))
+              .flatMap(eval(idx, _, filename))
         case Function.Call(name, args) =>
           val functionLabel = mkFunctionPrefix(filename, name)
           val returnLabel = s"$functionLabel.$idx"
@@ -425,7 +428,7 @@ object Translator extends App {
     Push(Segment.Constant, 2),
     Push(Segment.Constant, 4),
     Function.Call("foo", 2),
-    Function.Def("foo"),
+    Function.Def("foo", 5),
     Push(Segment.Constant, 42),
     Function.Return
   )
