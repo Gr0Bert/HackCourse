@@ -3,7 +3,7 @@ package hack.vm
 import hack.vm.StackMachine.{Arithmetic, Branching, Command, Function, MemoryAccess}
 import hack.vm.StackMachine.MemoryAccess.{Addressable, Segment}
 
-object Translator extends App {
+object Translator {
   sealed trait Register
   case object A extends Register
   case object M extends Register
@@ -206,7 +206,7 @@ object Translator extends App {
             case Segment.Static =>
               List(
                 Reference(s"$filename.$address"),
-                CInstruction(D, "A", None),
+                CInstruction(D, M, None),
                 Reference("SP"),
                 CInstruction(A, "M", None),
                 CInstruction(M, "D", None),
@@ -372,73 +372,4 @@ object Translator extends App {
 
   private def mkFunctionPrefix(filename: String, functionName: String) =
     filename.replace(".vm", "") + "$" + functionName
-
-  import MemoryAccess._
-  import hack.vm.StackMachine.Arithmetic._
-  val p = List(
-    Push(Segment.Constant, 10),
-    Pop(Segment.Local, 0),
-    Push(Segment.Constant, 21),
-    Push(Segment.Constant, 22),
-    Pop(Segment.Argument, 2),
-    Pop(Segment.Argument, 1),
-    Push(Segment.Constant, 36),
-    Pop(Segment.This, 6),
-    Push(Segment.Constant, 42),
-    Push(Segment.Constant, 45),
-    Pop(Segment.That, 5),
-    Pop(Segment.That, 2),
-    Push(Segment.Constant, 510),
-    Pop(Segment.Temp, 6),
-    Push(Segment.Local, 0),
-    Push(Segment.That, 5),
-    Add,
-    Push(Segment.Argument, 1),
-    Sub,
-    Push(Segment.This, 6),
-    Push(Segment.This, 6),
-    Add,
-    Sub,
-    Push(Segment.Temp, 6),
-    Add,
-  )
-
-  val lessThanTest = List(
-    Push(Segment.Constant, 6),
-    Push(Segment.Constant, 5),
-    Gt
-  )
-
-  val notTest = List(
-    Push(Segment.Constant, 12),
-    Neg
-  )
-
-  val branchTest = List(
-    StackMachine.Branching.Label("START"),
-    Push(Segment.Constant, 11),
-    Push(Segment.Constant, 10),
-    Lt,
-    StackMachine.Branching.IfGoTo("START"),
-    StackMachine.Branching.Label("END"),
-    StackMachine.Branching.GoTo("END"),
-  )
-
-  val callTest = List(
-    Push(Segment.Constant, 2),
-    Push(Segment.Constant, 4),
-    Function.Call("foo", 2),
-    Function.Def("foo", 5),
-    Push(Segment.Constant, 42),
-    Function.Return
-  )
-
-  callTest.zipWithIndex.foreach{
-    case (command, idx) =>
-      println{
-        s"""// $command
-           |${eval(idx, command, "Main.vm").mkString(System.lineSeparator())}
-           |""".stripMargin
-      }
-  }
 }
