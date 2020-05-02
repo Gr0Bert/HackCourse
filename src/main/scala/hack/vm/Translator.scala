@@ -77,25 +77,25 @@ object Translator {
       Reference("SP"),
       CInstruction(M, "M+1", None),
       // if result < 0
-      Reference("PUSH_TRUE"),
-      CInstruction(None, "D", Some(jumpForTrue)),
+      Reference(s"PUSH_TRUE_$idx"),
+      CInstruction(None, D, Some(jumpForTrue)),
       // else
-      Reference("PUSH_FALSE"),
+      Reference(s"PUSH_FALSE_$idx"),
       CInstruction(None, "0", Some("JMP")),
       // push `true` procedure
-      Label("PUSH_TRUE"),
+      Label(s"PUSH_TRUE_$idx"),
       Reference("SP"),
       CInstruction(A, M, None),
       CInstruction(D, M, None), // save return address
       Reference("SP"),
       CInstruction(Some("M"), "M-1", None),
       CInstruction(A, M, None),
-      CInstruction(M, "1", None),
+      CInstruction(M, "-1", None),
       // jump to return address
       CInstruction(A, D, None),
       CInstruction(None, "0", Some("JMP")),
       // push `false` procedure
-      Label("PUSH_FALSE"),
+      Label(s"PUSH_FALSE_$idx"),
       Reference("SP"),
       CInstruction(A, M, None),
       CInstruction(D, M, None), // save return address
@@ -138,8 +138,6 @@ object Translator {
             CInstruction(M, "M-1", None),
             CInstruction(A, M, None),
             CInstruction(M, "!M", None),
-            CInstruction(M, "M+1", None),
-            CInstruction(M, "M+1", None),
             Reference("SP"),
             CInstruction(M, "M+1", None),
           )
