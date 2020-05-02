@@ -255,12 +255,11 @@ object Translator {
       }
       case function: StackMachine.Function => function match {
         case Function.Def(name, localVars) =>
-          Label(mkFunctionPrefix(filename, name)) +:
+          Label(name) +:
           List.fill(localVars)(MemoryAccess.Push(Segment.Constant, 0))
               .flatMap(eval(idx, _, filename))
         case Function.Call(name, args) =>
-          val functionLabel = mkFunctionPrefix(filename, name)
-          val returnLabel = s"$functionLabel.$idx"
+          val returnLabel = s"${mkFunctionPrefix(filename, name)}.$idx"
           def pushFromLabel(labelName: String) = {
             List(
               Reference(labelName),
@@ -307,7 +306,7 @@ object Translator {
             pushThat ++
             setNewArg ++
             setLclToSP ++
-            eval(idx, Branching.GoTo(functionLabel), filename) :+ Label(returnLabel)
+            eval(idx, Branching.GoTo(name), filename) :+ Label(returnLabel)
         case Function.Return =>
           val placeReturnToArg = List(
             AtSP,
@@ -317,29 +316,29 @@ object Translator {
             AtArg,
             CInstruction(A, M),
             CInstruction(M, D),
-            AtArg,
-            CInstruction(D, M),
-            AtSP,
-            CInstruction(M, D),
             AtSP,
             CInstruction(M, "M+1")
           )
-          val putReturnOnStack = List(
+          val setSPToArgPlusOne = List(
+            AtArg,
+            CInstruction(D, M),
+            CInstruction(D, "D+1"),
+            AtSP,
+            CInstruction(M, D),
+          )
+          val putReturnToR13 = List(
             Constant(5),
             CInstruction(D, A),
             AtLCL,
             CInstruction(D, "M-D"),
             CInstruction(A, D),
             CInstruction(D, M),
-            AtSP,
-            CInstruction(A, M),
+            Reference("R13"),
             CInstruction(M, D),
           )
           val goToReturn = List(
-            AtSP,
+            Reference("R13"),
             CInstruction(A, M),
-            CInstruction(D, M),
-            CInstruction(A, D),
             CInstruction(None, "0", Some("JMP")),
           )
           def restore(index: Int, name: String) = List(
@@ -353,11 +352,12 @@ object Translator {
             CInstruction(M, D),
           )
 
+          putReturnToR13 ++
           placeReturnToArg ++
+          setSPToArgPlusOne ++
           restore(1, "THAT") ++
           restore(2, "THIS") ++
           restore(3, "ARG") ++
-          putReturnOnStack ++
           restore(4, "LCL") ++
           goToReturn
       }

@@ -30,14 +30,14 @@ object Main extends App {
         println(extra.trace(true))
         throw new RuntimeException("Failed to compile")
       case Right((_, expressions)) =>
-        val assembly = expressions.zipWithIndex.flatMap {
-          case (exp, idx) => Translator.eval(idx, exp, fileName)
+        val assembly = expressions.zipWithIndex.map {
+          case (exp, idx) => Translator.eval(idx, exp, fileName) -> exp
         }
         assembly
     }
   }
 
-  val pathRaw = "C:\\Users\\Tanya\\IdeaProjects\\HackCourse\\stack_machine\\08\\FunctionCalls\\StaticsTest\\"
+  val pathRaw = "C:\\Users\\Tanya\\IdeaProjects\\HackCourse\\stack_machine\\08\\ProgramFlow\\FibonacciSeries\\FibonacciSeries.vm"
   val path = Path.of(pathRaw)
   if (Files.isDirectory(path)) {
     import scala.jdk.CollectionConverters._
@@ -56,7 +56,9 @@ object Main extends App {
       hack.assembler.Assembly.CInstruction(Some("M"), "D", None),
     ) ++ Translator.eval(0, StackMachine.Function.Call("Sys.init", 0), "Sys")
     val outputFilePath = Path.of(path.toString, s"${path.getFileName.toString}.asm").toString
-    val asm = init ++ compiledLines
+    val asm = init.map(exp => s"$exp // Init") ++ compiledLines.flatMap{
+      case (exps, command) => exps.map(exp => s"$exp // $command")
+    }
     val result = asm.mkString(System.lineSeparator())
     writeToFile(outputFilePath, result).get
   } else {
@@ -64,9 +66,11 @@ object Main extends App {
     val fileNameAsm = path.getFileName.toString.replace(".vm", ".asm")
     val outputFilePath = Path.of(path.getParent.toString, fileNameAsm).toString
     val contents = readFile(path.toAbsolutePath.toString)
-    contents.map(compile(_, fileName.replace(".vm", ""))).map { asm =>
-      val result = asm.mkString(System.lineSeparator())
-      writeToFile(outputFilePath, result).get
+    contents.map(compile(_, fileName.replace(".vm", ""))).flatMap { asm =>
+      val result = asm.flatMap{
+        case (exps, command) => exps.map(exp => s"$exp // $command")
+      }.mkString(System.lineSeparator())
+      writeToFile(outputFilePath, result)
     }
   }
 }

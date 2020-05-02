@@ -1,0 +1,2 @@
+function Sys.init 0
+call SimpleFunction.test 0

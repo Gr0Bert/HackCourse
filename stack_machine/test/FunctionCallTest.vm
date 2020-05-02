@@ -1,0 +1,6 @@
+call SimpleFunction.test 0
+function SimpleFunction.test 2
+push constant 10
+push constant 12
+add
+return
