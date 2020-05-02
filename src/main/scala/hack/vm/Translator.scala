@@ -47,8 +47,8 @@ object Translator {
     )
   }
 
-  def performBinaryBoolean(idx: Int, jumpForTrue: String) = {
-    val uniqueLabel = s"UNIQUE_LABEL_$idx"
+  def performBinaryBoolean(filename: String, idx: Int, jumpForTrue: String) = {
+    val uniqueLabel = s"UNIQUE_LABEL_${filename}_$idx"
     List(
       // pop top value to D
       Reference("SP"),
@@ -77,13 +77,13 @@ object Translator {
       Reference("SP"),
       CInstruction(M, "M+1", None),
       // if result < 0
-      Reference(s"PUSH_TRUE_$idx"),
+      Reference(s"PUSH_TRUE_${filename}_$idx"),
       CInstruction(None, D, Some(jumpForTrue)),
       // else
-      Reference(s"PUSH_FALSE_$idx"),
+      Reference(s"PUSH_FALSE_${filename}_$idx"),
       CInstruction(None, "0", Some("JMP")),
       // push `true` procedure
-      Label(s"PUSH_TRUE_$idx"),
+      Label(s"PUSH_TRUE_${filename}_$idx"),
       Reference("SP"),
       CInstruction(A, M, None),
       CInstruction(D, M, None), // save return address
@@ -95,7 +95,7 @@ object Translator {
       CInstruction(A, D, None),
       CInstruction(None, "0", Some("JMP")),
       // push `false` procedure
-      Label(s"PUSH_FALSE_$idx"),
+      Label(s"PUSH_FALSE_${filename}_$idx"),
       Reference("SP"),
       CInstruction(A, M, None),
       CInstruction(D, M, None), // save return address
@@ -127,9 +127,9 @@ object Translator {
             Reference("SP"),
             CInstruction(M, "M+1", None),
           )
-        case Arithmetic.Eq => performBinaryBoolean(idx, "JEQ")
-        case Arithmetic.Gt => performBinaryBoolean(idx, "JGT")
-        case Arithmetic.Lt => performBinaryBoolean(idx, "JLT")
+        case Arithmetic.Eq => performBinaryBoolean(filename, idx, "JEQ")
+        case Arithmetic.Gt => performBinaryBoolean(filename, idx, "JGT")
+        case Arithmetic.Lt => performBinaryBoolean(filename, idx, "JLT")
         case Arithmetic.And => performBinaryArithmetic(CInstruction(M, "D&M", None))
         case Arithmetic.Or => performBinaryArithmetic(CInstruction(M, "D|M", None))
         case Arithmetic.Not =>
