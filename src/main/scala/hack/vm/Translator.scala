@@ -250,7 +250,7 @@ object Translator {
           CInstruction(A, M, None),
           CInstruction(D, M, None),
           Reference(label),
-          CInstruction(None, D, Some("JGT")),
+          CInstruction(None, D, Some("JNE")),
         )
       }
       case function: StackMachine.Function => function match {

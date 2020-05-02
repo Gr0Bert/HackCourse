@@ -37,6 +37,18 @@ object Main extends App {
     }
   }
 
+//  val pathRaw = "C:\\Users\\Tanya\\IdeaProjects\\HackCourse\\stack_machine\\07\\StackArithmetic\\StackTest\\StackTest.vm"
+//  val pathRaw = "C:\\Users\\Tanya\\IdeaProjects\\HackCourse\\stack_machine\\07\\StackArithmetic\\SimpleAdd\\SimpleAdd.vm"
+//  val pathRaw = "C:\\Users\\Tanya\\IdeaProjects\\HackCourse\\stack_machine\\07\\MemoryAccess\\StaticTest\\StaticTest.vm"
+//  val pathRaw = "C:\\Users\\Tanya\\IdeaProjects\\HackCourse\\stack_machine\\07\\MemoryAccess\\PointerTest\\PointerTest.vm"
+//  val pathRaw = "C:\\Users\\Tanya\\IdeaProjects\\HackCourse\\stack_machine\\07\\MemoryAccess\\BasicTest\\BasicTest.vm"
+//  val pathRaw = "C:\\Users\\Tanya\\IdeaProjects\\HackCourse\\stack_machine\\08\\ProgramFlow\\BasicLoop\\BasicLoop.vm"
+//  val pathRaw = "C:\\Users\\Tanya\\IdeaProjects\\HackCourse\\stack_machine\\08\\FunctionCalls\\FibonacciElement\\fusedFibo\\FibonacciElement.vm"
+//  val pathRaw = "C:\\Users\\Tanya\\IdeaProjects\\HackCourse\\stack_machine\\test\\goto\\goto.vm"
+//  val pathRaw = "C:\\Users\\Tanya\\IdeaProjects\\HackCourse\\stack_machine\\08\\FunctionCalls\\NestedCall"
+//  val pathRaw = "C:\\Users\\Tanya\\IdeaProjects\\HackCourse\\stack_machine\\08\\FunctionCalls\\FibonacciElement"
+//  val pathRaw = "C:\\Users\\Tanya\\IdeaProjects\\HackCourse\\stack_machine\\08\\FunctionCalls\\SimpleFunction\\SimpleFunction.vm"
+//  val pathRaw = "C:\\Users\\Tanya\\IdeaProjects\\HackCourse\\stack_machine\\08\\FunctionCalls\\StaticsTest"
   val pathRaw = "C:\\Users\\Tanya\\IdeaProjects\\HackCourse\\stack_machine\\08\\ProgramFlow\\FibonacciSeries\\FibonacciSeries.vm"
   val path = Path.of(pathRaw)
   if (Files.isDirectory(path)) {
