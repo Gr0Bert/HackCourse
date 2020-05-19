@@ -19,9 +19,9 @@ object Parser {
 
   private def identifier[_: P] =
     P(!number ~ (alpha | number | underscore).rep.!).map(Token.Identifier)
-  private def stringConstant[_: P] =
+  private def stringConstant[_: P]: P[Term] =
     P("\"" ~ AnyChar.rep.! ~ "\"").map(Token.StringConstant)
-  private def integerConstant[_: P] =
+  private def integerConstant[_: P]: P[Term] =
     P(number.rep(min = 1, max = 5).!).map(_.toInt).map(Token.IntegerConstant)
 
   private def typeDeclaration[_: P] = {
@@ -67,17 +67,51 @@ object Parser {
       case (e, s) => Statement.While(e, s)
     }.log
 
-  // TODO: subroutine call
-  private def doStatement[_: P] = P("do" ~ s ~ expression ~ s ~ ";").map(Statement.Do)
+  private def doStatement[_: P] = P("do" ~ s ~ subroutineCall ~ s ~ ";").map(Statement.Do)
 
   private def returnStatement[_: P] = P("return" ~ s ~ expression.? ~ s ~ ";").map(Statement.Return)
 
+  private def expressionList[_: P] = expression.rep(sep = (s.? ~ "," ~ s.?))
+
+  private def keywordConstant[_: P]: P[Term] = StringIn("true", "false", "null", "this").!.map(Expression.KeywordConstant)
+
+  private def op[_: P] = StringIn("+", "-", "*", "/", "&", "|", "<", ">", "=").!.map(Expression.Op)
+
+  private def unaryOp[_: P] = StringIn("-", "~").!.map(Expression.UnaryOp)
+
+  private def varName[_: P]: P[Expression.VarName] = identifier.map(Expression.VarName)
+  private def varAccess[_: P]: P[Expression.VarAccess] = P(varName ~ "[" ~ s ~ expression ~ s ~"]").map {
+    case (name, exp) => Expression.VarAccess(name, exp)
+  }
+
+  private def subroutineCall[_: P]: P[Expression.SubroutineCall] =
+    P((identifier ~ ".").? ~ identifier ~ "(" ~ s ~ expressionList ~ s ~ ")").map {
+      case (classNameOpt, subName, args) => classNameOpt match {
+        case Some(clName) =>
+          val sub = Expression.SubroutineCall.PlainSubroutineCall(subName, args)
+          Expression.SubroutineCall.ClassSubroutineCall(clName, sub)
+        case None =>
+          Expression.SubroutineCall.PlainSubroutineCall(subName, args)
+      }
+    }
+
+  private def expressionInBraces[_: P]: P[Term] = P("(" ~ s ~ expression ~ s ~ ")")
+
+  private def expression[_: P]: P[Expression.ExpressionDec] = (term ~ (op ~ s ~ term ~ s).rep).map {
+    case (t, other) => Expression.ExpressionDec(t, other)
+  }
+
+  private def unaryOpApply[_: P] = (unaryOp ~ s ~ term).map {
+    case (o, t) => Expression.UnaryOpApply(o, t)
+  }
+
+  private def term[_: P]: P[Term] =
+    (integerConstant | stringConstant | keywordConstant | varName | varAccess | subroutineCall | expressionInBraces | unaryOpApply)
+
   private def statement[_: P]: P[Statement] = (ifStatement | letStatement | whileStatement | doStatement | returnStatement)
   private def statements[_: P]: P[Seq[Statement]] = statement.rep(sep = ss)
-  private def expression[_: P]: P[Expression] = Pass(Expression.Op("____"))
 
-  private def expr[_: P] = ss ~ statement
-  private def parser[_: P] = P(expr.rep(sep = lineSeparator) ~ End) //.log
+  private def parser[_: P] = P((ss ~ (statement | term)).rep(sep = lineSeparator) ~ End) //.log
 
   private def onFailure(x: String, y: Int, z: Parsed.Extra) = Left((x, y, z))
   private def onSuccess(exp: Seq[AST], index: Int) = Right((index, exp))
