@@ -5,16 +5,12 @@ package object compiler {
 
     sealed trait AST
 
-    sealed trait Term extends AST
-
     sealed trait Token extends AST
 
     object Token {
       final case class Keyword(value: String) extends Token
       final case class Symbol(value: String) extends Token
-      final case class IntegerConstant(value: Int) extends Token with Term
-      final case class StringConstant(value: String) extends Token with Term
-      final case class Identifier(value: String) extends Token with Term
+      final case class Identifier(value: String) extends Token
     }
 
     sealed trait Structure extends AST
@@ -22,8 +18,8 @@ package object compiler {
     object Structure {
       final case class ClassStruct(
         className: Token.Identifier,
-        classVarDec: List[ClassVarDec],
-        subroutineDec: List[SubroutineDec]
+        classVarDec: Seq[ClassVarDec],
+        subroutineDec: Seq[SubroutineDec]
       ) extends Structure
 
       final case class ClassVarDec(
@@ -42,8 +38,8 @@ package object compiler {
         `type`: Type,
         subroutineName: Token.Identifier,
         parameterList: Seq[SubroutineParameter],
-        subroutineVars: List[VarDec],
-        subroutineStatements: List[Statement],
+        subroutineVars: Seq[VarDec],
+        subroutineStatements: Seq[Statement],
       ) extends Structure
 
       final case class SubroutineParameter(
@@ -88,27 +84,31 @@ package object compiler {
 
     object Expression {
 
-      final case class KeywordConstant(value: String) extends Expression with Term
+      final case class KeywordConstant(value: String) extends Expression
 
-      final case class UnaryOp(value: String) extends Expression
+      final case class Op(value: String)
 
-      final case class Op(value: String) extends Expression
+      final case class BinaryOp(first: Expression, op: Op, second: Expression) extends Expression
 
-      final case class ExpressionDec(term: Term, terms: Seq[(Op, Term)]) extends Expression with Term
+      final case class VarName(name: Token.Identifier) extends Expression
 
-      final case class VarName(name: Token.Identifier) extends Expression with Term
+      final case class VarAccess(name: VarName, expression: Expression) extends Expression
 
-      final case class VarAccess(name: VarName, expression: Expression) extends Expression with Term
+      final case class UnaryOp(value: String)
 
-      final case class UnaryOpApply(op: UnaryOp, term: Term) extends Expression with Term
+      final case class UnaryOpApply(op: UnaryOp, term: Expression) extends Expression
 
-      sealed trait SubroutineCall extends Expression with Term
+      final case class IntegerConstant(value: Int) extends Expression
+
+      final case class StringConstant(value: String) extends Expression
+
+      sealed trait SubroutineCall extends Expression
 
       object SubroutineCall {
 
         final case class PlainSubroutineCall(
           subroutineName: Token.Identifier,
-          expressionsList: Seq[ExpressionDec]
+          expressionsList: Seq[Expression]
         ) extends SubroutineCall
 
         final case class ClassSubroutineCall(
