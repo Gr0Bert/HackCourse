@@ -12,13 +12,38 @@ object Parser {
 
   private def ss[_: P] = (tabOrSpace | lineSeparator | comment).rep.?
   private def s[_: P] = tabOrSpace.rep.?
+  private def sm[_: P] = tabOrSpace.rep(1)
 
   private def alpha[_: P] = P(CharIn("a-zA-Z"))
   private def underscore[_: P] = P("_")
   private def number[_: P] = P(CharIn("0-9"))
 
+  private def keywords[_: P] = List(
+    "let",
+    "class",
+    "constructor",
+    "function",
+    "method",
+    "field",
+    "static",
+    "var",
+    "int",
+    "char",
+    "boolean",
+    "void",
+    "true",
+    "false",
+    "null",
+    "this",
+    "do",
+    "if",
+    "else",
+    "while",
+    "return"
+  )
+
   private def identifier[_: P] =
-    P((!number) ~ ((alpha | number | underscore).rep(1)).!).map(Token.Identifier)
+    P((!number) ~ ((alpha | number | underscore).rep(1)).!).filter(parsed => !keywords.contains(parsed)).map(Token.Identifier).log
 
   object StructureParsers {
 
@@ -67,14 +92,14 @@ object Parser {
     private def codeBlock[_: P] = P("{" ~ ss ~ statements ~ ss ~ "}")
 
     private def ifStatement[_: P] =
-      P(ss ~ "if" ~ ss ~ "(" ~ ExpressionParsers.expression ~ ")" ~ ss ~ codeBlock ~ ss ~ "else" ~ ss ~ codeBlock).map {
+      P(ss ~ "if" ~ s ~ "(" ~ ExpressionParsers.expression ~ ")" ~ ss ~ codeBlock ~ ss ~ "else" ~ ss ~ codeBlock).map {
         case (exp, t, f) => Statement.If(exp, t, f)
       }.log
 
     private def letStatement[_: P] =
       P("let" ~ s ~ identifier ~ ("[" ~ ExpressionParsers.expression ~ "]").? ~ s ~ "=" ~ s ~ ExpressionParsers.expression ~ ";").map {
         case (name, accessOpt, exp) => Statement.Let(name, accessOpt, exp)
-      }
+      }.log
 
     private def whileStatement[_: P] =
       P("while" ~ s ~ "(" ~ s ~ ExpressionParsers.expression ~ s ~ ")" ~ ss ~ codeBlock).map {
@@ -101,14 +126,14 @@ object Parser {
 
     private def unaryOp[_: P] = StringIn("-", "~").!.map(Expression.UnaryOp)
 
-    private def varName[_: P]: P[Expression.VarName] = identifier.map(Expression.VarName)
+    private def varName[_: P]: P[Expression.VarName] = identifier.map(Expression.VarName).log
 
     private def varAccess[_: P]: P[Expression.VarAccess] = P(varName ~ "[" ~ s ~ expression ~ s ~"]").map {
       case (name, exp) => Expression.VarAccess(name, exp)
     }
 
     def stringConstant[_: P]: P[Expression.StringConstant] =
-      P("\"" ~ CharsWhile(c => c != '"').!).map(Expression.StringConstant).log
+      P("\"" ~ CharsWhile(c => c != '"').! ~ "\"").map(Expression.StringConstant).log
 
     private def integerConstant[_: P]: P[Expression.IntegerConstant] =
       P(number.rep(min = 1, max = 5).!).map(_.toInt).map(Expression.IntegerConstant)
@@ -165,21 +190,24 @@ object ParserTest extends App {
 //  assert(Parser.parseRaw("var int test,test1,test2;").isRight, "var dec is broken")
 //  assert(Parser.parseRaw("static var int test,test1,test2;").isRight, "var dec is broken")
 //  assert(Parser.parseRaw("function int test(int t1, boolean t2)").isRight, "subroutine dec is broken")
-//  println {
-//    Parser.parseRaw {
-//      """   if () {
-//        |let test[] = ; // some comment goes here
-//        |} else {while () {
-//        |  let test[] = ;
-//        |  do testFunc();
-//        |  return;
-//        |}}
-//        |let test[] = ;""".stripMargin
-//    }
-//  }
   println {
     Parser.parseRaw {
-      """return "asc";"""
+      """   if (true) {
+        |let test = 1; // some comment goes here
+        |} else {while (true) {
+        |  let test[7] = 5;
+        |  do testFunc();
+        |  return;
+        |}}""".stripMargin
     }
   }
+//  println {
+//    Parser.parseRaw {
+//      """if (true) {
+//        | let test = 1;
+//        |} else {
+//        |
+//        |}""".stripMargin
+//    }
+//  }
 }
