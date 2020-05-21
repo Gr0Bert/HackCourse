@@ -55,14 +55,14 @@ object Parser {
     }
 
     private def varDeclaration[_: P] =
-      P("var" ~ " " ~/ typeDeclaration ~ " " ~/ identifier.rep(sep = P("," ~ " ".?)) ~ ";").map{
+      P("var" ~ s ~ typeDeclaration ~ s ~ identifier.rep(sep = P("," ~ s)) ~ s ~ ";").map{
         case (t, names) => Structure.VarDec(t, names)
       }.log
 
     private def classVarDeclaration[_: P] =
-      P(StringIn("static", "field").! ~ " " ~ varDeclaration).map{
-        case (modifier, varDec) => Structure.ClassVarDec(Token.Keyword(modifier), varDec)
-      }
+      P(StringIn("static", "field").! ~ s ~ typeDeclaration ~ s ~ identifier.rep(sep = P("," ~ s)) ~ s ~ ";").map{
+        case (modifier, tp, names) => Structure.ClassVarDec(Token.Keyword(modifier), Structure.VarDec(tp, names))
+      }.log
 
     private def parameterList[_: P] =
       P("(" ~ (typeDeclaration ~ " " ~ identifier).rep(sep = P("," ~ " ".?)) ~ ")").map { params =>
@@ -71,7 +71,7 @@ object Parser {
 
     private def subroutineDeclaration[_: P] =
       P(
-        StringIn("constructor", "function", "method").! ~ s ~
+        ss ~ StringIn("constructor", "function", "method").! ~ s ~
           typeDeclaration ~ s ~
           identifier ~ parameterList ~ ss ~
           "{" ~ ss ~ varDeclaration.rep(sep = ss) ~ ss ~ StatementParsers.statements ~ ss ~ "}").map {
@@ -81,11 +81,11 @@ object Parser {
 
     def classDeclaration[_: P] =
       P(
-        "class" ~ s ~ identifier ~ ss ~
+        ss ~ "class" ~ s ~ identifier ~ ss ~
           "{" ~ ss ~ classVarDeclaration.rep(sep = ss) ~ ss ~ subroutineDeclaration.rep(sep = ss) ~ ss ~ "}"
       ).map {
         case (name, vars, funcs) => Structure.ClassStruct(name, vars, funcs)
-      }
+      }.log
   }
 
   object StatementParsers {
@@ -97,12 +97,12 @@ object Parser {
       }.log
 
     private def letStatement[_: P] =
-      P("let" ~ s ~ identifier ~ ("[" ~ ExpressionParsers.expression ~ "]").? ~ s ~ "=" ~ s ~ ExpressionParsers.expression ~ ";").map {
+      P(ss ~ "let" ~ s ~ identifier ~ ("[" ~ ExpressionParsers.expression ~ "]").? ~ s ~ "=" ~ s ~ ExpressionParsers.expression ~ ";").map {
         case (name, accessOpt, exp) => Statement.Let(name, accessOpt, exp)
       }.log
 
     private def whileStatement[_: P] =
-      P("while" ~ s ~ "(" ~ s ~ ExpressionParsers.expression ~ s ~ ")" ~ ss ~ codeBlock).map {
+      P(ss ~ "while" ~ s ~ "(" ~ s ~ ExpressionParsers.expression ~ s ~ ")" ~ ss ~ codeBlock).map {
         case (e, s) => Statement.While(e, s)
       }.log
 
@@ -190,15 +190,30 @@ object ParserTest extends App {
 //  assert(Parser.parseRaw("var int test,test1,test2;").isRight, "var dec is broken")
 //  assert(Parser.parseRaw("static var int test,test1,test2;").isRight, "var dec is broken")
 //  assert(Parser.parseRaw("function int test(int t1, boolean t2)").isRight, "subroutine dec is broken")
+//  println {
+//    Parser.parseRaw {
+//      """   if (true) {
+//        |let test = 1; // some comment goes here
+//        |} else {while (true) {
+//        |  let test[7] = 5;
+//        |  do testFunc();
+//        |  return;
+//        |}}""".stripMargin
+//    }
+//  }
   println {
     Parser.parseRaw {
-      """   if (true) {
-        |let test = 1; // some comment goes here
-        |} else {while (true) {
-        |  let test[7] = 5;
-        |  do testFunc();
-        |  return;
-        |}}""".stripMargin
+      """class Main {
+        |    static boolean test;
+        |
+        |    function void main() {
+        |        var SquareGame game;
+        |        let game = game;
+        |        do game.run();
+        |        do game.dispose("asd");
+        |        return;
+        |    }
+        |}""".stripMargin
     }
   }
 //  println {
