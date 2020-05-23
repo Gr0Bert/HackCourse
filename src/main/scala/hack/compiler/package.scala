@@ -66,7 +66,7 @@ package object compiler {
       final case class If(
         expression: Expression,
         trueCond: Seq[Statement],
-        falseCond: Seq[Statement],
+        falseCond: Option[Seq[Statement]],
       ) extends Statement
 
       final case class While(
@@ -86,7 +86,9 @@ package object compiler {
 
       final case class KeywordConstant(value: String) extends Expression
 
-      final case class Op(value: String)
+      final case class Braces(expr: Expression) extends Expression
+
+      final case class Op(value: String) extends Expression
 
       final case class BinaryOp(first: Expression, op: Op, second: Expression) extends Expression
 
