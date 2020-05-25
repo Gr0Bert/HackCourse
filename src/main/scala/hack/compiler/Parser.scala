@@ -74,7 +74,7 @@ object Parser {
           .rep(sep = P("," ~ s)) ~ s ~ ";"
       ).map {
         case (modifier, tp, names) =>
-          Structure.ClassVarDec(Token.Keyword(modifier), Structure.VarDec(tp, names))
+          Structure.ClassVarDec(Token.Keyword(modifier), tp, names)
       }
 
     private def parameterList[_: P] =

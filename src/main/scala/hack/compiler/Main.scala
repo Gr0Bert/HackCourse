@@ -38,9 +38,9 @@ object Main extends App {
   def processFile(filePath: Path) = {
     val contents = readFile(filePath.toAbsolutePath.toString).get
     val ast = compile(contents)
-    val fileNameTxt = filePath.getFileName.toString.replace(".jack", ".txt")
+    val fileNameTxt = filePath.getFileName.toString.replace(".jack", ".xml123")
     val outputFilePath = Path.of(filePath.getParent.toString, fileNameTxt).toString
-    writeToFile(outputFilePath, ast.toString)
+    writeToFile(outputFilePath, ast.toXml)
   }
 
   val pathRaw = "C:\\Users\\Tanya\\IdeaProjects\\HackCourse\\jack\\10\\Square"
