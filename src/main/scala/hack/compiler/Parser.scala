@@ -174,7 +174,12 @@ object Parser {
     private def expressionInBraces[_: P]: P[Expression] = P("(" ~ s ~ expression ~ s ~ ")").map(Expression.Braces)
 
     private def binaryOp[_: P]: P[Expression.Op] =
-      StringIn("+", "-", "*", "/", "&", "|", "<", ">", "=").!.map(Expression.Op)
+      StringIn("+", "-", "*", "/", "&", "|", "<", ">", "=").!.map{
+        case "<" => "&lt;"
+        case ">" => "&gt;"
+        case "&" => "&amp;"
+        case x => x
+      }.map(Expression.Op)
 
     private def unaryOpApply[_: P] = (unaryOp ~ s ~ expression).map {
       case (o, t) => Expression.UnaryOpApply(o, t)

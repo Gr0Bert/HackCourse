@@ -28,12 +28,12 @@ package object compiler {
       ) extends Structure {
         override def toXml: String = {
           s"""<class>
-             |  <keyword> class </keyword>
-             |  ${className.toXml}
-             |  <symbol> { </symbol>
-             |  ${classVarDec.map(_.toXml).mkString(System.lineSeparator())}
-             |  ${subroutineDec.map(_.toXml).mkString(System.lineSeparator())}
-             |  <symbol> } </symbol>
+             |<keyword> class </keyword>
+             |${className.toXml}
+             |<symbol> { </symbol>
+             |${classVarDec.map(_.toXml).mkString(System.lineSeparator())}
+             |${subroutineDec.map(_.toXml).mkString(System.lineSeparator())}
+             |<symbol> } </symbol>
              |</class>""".stripMargin
         }
       }
@@ -45,10 +45,10 @@ package object compiler {
       ) extends Structure {
         override def toXml: String = {
           s"""<classVarDec>
-             |  ${keyword.toXml}
-             |  ${`type`.toXml}
-             |  ${varNames.map(_.toXml).mkString(s"${System.lineSeparator()}<symbol> , </symbol>")}
-             |  <symbol> ; </symbol>
+             |${keyword.toXml}
+             |${`type`.toXml}
+             |${varNames.map(_.toXml).mkString(s"${System.lineSeparator()}<symbol> , </symbol>")}
+             |<symbol> ; </symbol>
              |</classVarDec>""".stripMargin
         }
       }
@@ -73,22 +73,22 @@ package object compiler {
       ) extends Structure {
         override def toXml: String = {
           s"""<subroutineDec>
-             |  ${keyword.toXml}
-             |  ${`type`.toXml}
-             |  ${subroutineName.toXml}
-             |  <symbol> ( </symbol>
-             |  <parameterList>
-             |    ${parameterList.map(_.toXml).mkString(s"${System.lineSeparator()}<symbol> , </symbol>")}
-             |  </parameterList>
-             |  <symbol> ) </symbol>
-             |  <subroutineBody>
-             |    <symbol> { </symbol>
-             |      ${subroutineVars.map(_.toXml).mkString(System.lineSeparator())}
-             |    <statements>
-             |      ${subroutineStatements.map(_.toXml).mkString(System.lineSeparator())}
-             |    </statements>
-             |    <symbol> } </symbol>
-             |  </subroutineBody>
+             |${keyword.toXml}
+             |${`type`.toXml}
+             |${subroutineName.toXml}
+             |<symbol> ( </symbol>
+             |<parameterList>
+             |${parameterList.map(_.toXml).mkString(s"${System.lineSeparator()}<symbol> , </symbol>")}
+             |</parameterList>
+             |<symbol> ) </symbol>
+             |<subroutineBody>
+             |<symbol> { </symbol>
+             |${subroutineVars.map(_.toXml).mkString(System.lineSeparator())}
+             |<statements>
+             |${subroutineStatements.map(_.toXml).mkString(System.lineSeparator())}
+             |</statements>
+             |<symbol> } </symbol>
+             |</subroutineBody>
              |</subroutineDec>""".stripMargin
         }
       }
@@ -129,12 +129,23 @@ package object compiler {
         expression: Option[Expression],
         eqExpression: Expression
       ) extends Statement {
+        private def exprAccess = expression.map{ e =>
+          s"""<symbol> [ </symbol>
+             |<expression>
+             |${e.toXml}
+             |</expression>
+             |<symbol> ] </symbol>
+             |""".stripMargin
+        }
         override def toXml: String = {
           s"""<letStatement>
              |  <keyword> let </keyword>
              |  ${varName.toXml}
+             |  ${exprAccess.getOrElse("")}
              |  <symbol> = </symbol>
-             |  ${expression.map(_.toXml).getOrElse("<expression> </expression>")}
+             |  <expression>
+             |  ${eqExpression.toXml}
+             |  </expression>
              |  <symbol> ; </symbol>
              |</letStatement>
              |""".stripMargin
@@ -148,23 +159,30 @@ package object compiler {
       ) extends Statement {
         private def falseToXml = {
           falseCond.map { fc =>
-            s"""<symbol> { </symbol>
-              |   ${fc.map(_.toXml).mkString(System.lineSeparator())}
+            s"""<keyword> else </keyword>
+              |<symbol> { </symbol>
+              |<statements>
+              |${fc.map(_.toXml).mkString(System.lineSeparator())}
+              |</statements>
               | <symbol> } </symbol>
               | """.stripMargin
-          }
+          }.getOrElse("")
         }
 
         override def toXml: String = {
           s"""<ifStatement>
-             |  <keyword> if </keyword>
-             |  <symbol> ( </symbol>
-             |    ${expression.toXml}
-             |  <symbol> ) </symbol>
-             |  <symbol> { </symbol>
-             |    ${trueCond.map(_.toXml).mkString(System.lineSeparator())}
-             |  <symbol> } </symbol>
-             |  $falseToXml
+             |<keyword> if </keyword>
+             |<symbol> ( </symbol>
+             |<expression>
+             |${expression.toXml}
+             |</expression>
+             |<symbol> ) </symbol>
+             |<symbol> { </symbol>
+             |<statements>
+             |${trueCond.map(_.toXml).mkString(System.lineSeparator())}
+             |</statements>
+             |<symbol> } </symbol>
+             |$falseToXml
              |</ifStatement>
              |""".stripMargin
         }
@@ -176,13 +194,15 @@ package object compiler {
       ) extends Statement {
         override def toXml: String = {
           s"""<whileStatement>
-             |  <keyword> while </keyword>
-             |  <symbol> ( </symbol>
-             |    ${expression.toXml}
-             |  <symbol> ) </symbol>
-             |  <symbol> { </symbol>
-             |    ${statements.map(_.toXml).mkString(System.lineSeparator())}
-             |  <symbol> } </symbol>
+             |<keyword> while </keyword>
+             |<symbol> ( </symbol>
+             |<expression>
+             |${expression.toXml}
+             |</expression>
+             |<symbol> ) </symbol>
+             |<symbol> { </symbol>
+             |${statements.map(_.toXml).mkString(System.lineSeparator())}
+             |<symbol> } </symbol>
              |</whileStatement>
              |""".stripMargin
         }
@@ -191,19 +211,23 @@ package object compiler {
       final case class Do(subroutineCall: Expression.SubroutineCall) extends Statement {
         override def toXml: String = {
           s"""<doStatement>
-             |  <keyword> do </keyword>
-             |  ${subroutineCall.toXml}
-             |  <symbol> ; </symbol>
+             |<keyword> do </keyword>
+             |${subroutineCall.toXml.split(System.lineSeparator()).tail.reverse.tail.reverse.mkString(System.lineSeparator())}
+             |<symbol> ; </symbol>
              |</doStatement>""".stripMargin
         }
       }
 
       final case class Return(expression: Option[Expression]) extends Statement {
         override def toXml: String = {
-          s""" <returnStatement>
-             |  <keyword> return </keyword>
-             |  ${expression.map(_.toXml).getOrElse("")}
-             |  <symbol> ; </symbol>
+          s"""<returnStatement>
+             |<keyword> return </keyword>
+             |${expression.map(_.toXml).map { e =>
+                s"""<expression>
+               |$e
+               |</expression>""".stripMargin
+              }.getOrElse("")}
+             |<symbol> ; </symbol>
              |</returnStatement>
              |""".stripMargin
         }
@@ -218,16 +242,20 @@ package object compiler {
       final case class KeywordConstant(value: String) extends Expression {
         override def toXml: String =
           s"""<term>
-             |  <keyword> $value </keyword>
-             |<term>
+             |<keyword> $value </keyword>
+             |</term>
              |""".stripMargin
       }
 
       final case class Braces(expr: Expression) extends Expression {
         override def toXml: String = {
-          s"""<symbol> ( </symbol>
-             |   ${expr.toXml}
-             |<symbol> ) </symbol>""".stripMargin
+          s"""<term>
+             |<symbol> ( </symbol>
+             |<expression>
+             |${expr.toXml}
+             |</expression>
+             |<symbol> ) </symbol>
+             |</term>""".stripMargin
         }
       }
 
@@ -247,15 +275,22 @@ package object compiler {
       }
 
       final case class VarName(name: Token.Identifier) extends Expression {
-        override def toXml: String = s"${name.toXml}"
+        override def toXml: String =
+          s"""<term>
+             |${name.toXml}
+             |</term>""".stripMargin
       }
 
       final case class VarAccess(name: VarName, expression: Expression) extends Expression {
         override def toXml: String =
-          s"""${name.toXml}
+          s"""<term>
+             |${name.name.toXml}
              |<symbol> [ </symbol>
+             |<expression>
              |${expression.toXml}
+             |</expression>
              |<symbol> ] </symbol>
+             |</term>
              |""".stripMargin
       }
 
@@ -263,16 +298,18 @@ package object compiler {
 
       final case class UnaryOpApply(op: UnaryOp, term: Expression) extends Expression {
         override def toXml: String =
-          s"""<symbol> ${op.value} </symbol>
+          s"""<term>
+             |<symbol> ${op.value} </symbol>
              |${term.toXml}
+             |</term>
              |""".stripMargin
       }
 
       final case class IntegerConstant(value: Int) extends Expression {
         override def toXml: String = {
           s"""<term>
-             |  <integerConstant> $value </integerConstant>
-             |<term>
+             |<integerConstant> $value </integerConstant>
+             |</term>
              |""".stripMargin
         }
       }
@@ -280,9 +317,9 @@ package object compiler {
       final case class StringConstant(value: String) extends Expression {
         override def toXml: String = {
           s"""<term>
-             |  <stringConstant> $value </stringConstant>
-             |<term>
-             |""".stripMargin
+              <stringConstant> $value </stringConstant>
+              </term>
+             """.stripMargin
         }
       }
 
@@ -295,13 +332,14 @@ package object compiler {
           expressionsList: Seq[Expression]
         ) extends SubroutineCall {
           override def toXml: String =
-            s"""
+            s"""<term>
                |${subroutineName.toXml}
                |<symbol> ( </symbol>
                |<expressionList>
-               |  ${expressionsList.map(_.toXml).mkString(s"${System.lineSeparator()}<symbol> , </symbol>")}
+               |${expressionsList.map(_.toXml).map(e => s"<expression> $e </expression>").mkString(s"${System.lineSeparator()}<symbol> , </symbol>")}
                |</expressionList>
                |<symbol> ) </symbol>
+               |</term>
                |""".stripMargin
         }
 
@@ -310,10 +348,16 @@ package object compiler {
           plainSubroutineCall: PlainSubroutineCall
         ) extends SubroutineCall {
           override def toXml: String = {
-            s"""
+            s"""<term>
                |${name.toXml}
                |<symbol> . </symbol>
-               |${plainSubroutineCall.toXml}
+               |${plainSubroutineCall.subroutineName.toXml}
+               |<symbol> ( </symbol>
+               |<expressionList>
+               |${plainSubroutineCall.expressionsList.map(_.toXml).map(e => s"<expression> $e </expression>").mkString(s"${System.lineSeparator()}<symbol> , </symbol>")}
+               |</expressionList>
+               |<symbol> ) </symbol>
+               |</term>
                |""".stripMargin
           }
         }

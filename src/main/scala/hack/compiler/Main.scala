@@ -38,8 +38,8 @@ object Main extends App {
   def processFile(filePath: Path) = {
     val contents = readFile(filePath.toAbsolutePath.toString).get
     val ast = compile(contents)
-    val fileNameTxt = filePath.getFileName.toString.replace(".jack", ".xml123")
-    val outputFilePath = Path.of(filePath.getParent.toString, fileNameTxt).toString
+    val fileNameTxt = filePath.getFileName.toString.replace(".jack", ".xml")
+    val outputFilePath = Path.of(filePath.getParent.toString, s"m_$fileNameTxt").toString
     writeToFile(outputFilePath, ast.toXml)
   }
 
