@@ -11,7 +11,7 @@ package object compiler {
         `type`: Structure.Type
       ): SymbolTable = {
         val symbols = entries.getOrElse(kind, Map.empty)
-        val newEntry = SymbolTable.Entry(`type`, symbols.size + 1)
+        val newEntry = SymbolTable.Entry(`type`, symbols.size)
         if (symbols.get(name).isDefined) {
           throw new RuntimeException(s"Variable $name is already defined")
         } else {
