@@ -30,6 +30,8 @@ package object compiler {
         `type`: Structure.Type,
         index: Int
       )
+
+      def empty: SymbolTable = SymbolTable(Map.empty)
     }
 
     sealed trait AST {
