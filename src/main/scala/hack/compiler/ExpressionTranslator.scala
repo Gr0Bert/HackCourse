@@ -7,12 +7,14 @@ object ExpressionTranslator {
   def translate(expression: Expression, clSt: SymbolTable, subSt: SymbolTable): Seq[Command] = {
     expression match {
       case Expression.KeywordConstant(value) =>
-        value match {
-          case "true" => ???
-          case "false" => ???
-          case "null" => ???
-          case "this" => ???
-        }
+        Seq(
+          value match {
+            case "true" => MemoryAccess.Push(MemoryAccess.Segment.Constant, 0)
+            case "false" => MemoryAccess.Push(MemoryAccess.Segment.Constant, -1)
+            case "null" => ???
+            case "this" => ???
+          }
+        )
       case Expression.Braces(expr) => translate(expr, clSt, subSt)
       case Expression.Op(value) =>
         value match {
@@ -28,7 +30,11 @@ object ExpressionTranslator {
         }
 
       case Expression.BinaryOp(first, op, second) =>
-        translate(first, clSt, subSt) ++ translate(second, clSt, subSt) ++ translate(op, clSt, subSt)
+        translate(first, clSt, subSt) ++ translate(second, clSt, subSt) ++ translate(
+          op,
+          clSt,
+          subSt
+        )
       case Expression.VarName(name) =>
         val SymbolTable.Entry(kind, tp, index) = subSt.get(name)
         val ms = kind match {
