@@ -2,31 +2,29 @@ package hack
 
 package object compiler {
   object Compiler {
-    final case class SymbolTable(
-      entries: Map[Token.Keyword, Map[Token.Identifier, SymbolTable.Entry]]
-    ) {
+    final case class SymbolTable(entries: Map[Token.Identifier, SymbolTable.Entry]) {
       def update(
         kind: Token.Keyword,
         name: Token.Identifier,
         `type`: Structure.Type
       ): SymbolTable = {
-        val symbols = entries.getOrElse(kind, Map.empty)
-        val newEntry = SymbolTable.Entry(`type`, symbols.size)
-        if (symbols.get(name).isDefined) {
+        if (entries.get(name).isDefined) {
           throw new RuntimeException(s"Variable $name is already defined")
         } else {
-          val updatedSymbols = symbols.updated(name, newEntry)
-          new SymbolTable(entries.updated(kind, updatedSymbols))
+          val kindCount = entries.count(_._2.kind == kind)
+          val newEntry = SymbolTable.Entry(kind, `type`, kindCount)
+          new SymbolTable(entries.updated(name, newEntry))
         }
       }
 
-      def get(kind: Token.Keyword, name: Token.Identifier): SymbolTable.Entry = {
-        entries(kind)(name)
+      def get(name: Token.Identifier): SymbolTable.Entry = {
+        entries(name)
       }
     }
 
     object SymbolTable {
       final case class Entry(
+        kind: Token.Keyword,
         `type`: Structure.Type,
         index: Int
       )
