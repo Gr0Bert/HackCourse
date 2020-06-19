@@ -7,14 +7,12 @@ object ExpressionTranslator {
   def translate(expression: Expression, clSt: SymbolTable, subSt: SymbolTable): Seq[Command] = {
     expression match {
       case Expression.KeywordConstant(value) =>
-        Seq(
-          value match {
-            case "true" => MemoryAccess.Push(MemoryAccess.Segment.Constant, 0)
-            case "false" => MemoryAccess.Push(MemoryAccess.Segment.Constant, -1)
-            case "null" => ???
-            case "this" => ???
-          }
-        )
+        value match {
+          case "true" => Seq(MemoryAccess.Push(MemoryAccess.Segment.Constant, 0))
+          case "false" => Seq(MemoryAccess.Push(MemoryAccess.Segment.Constant, 1), Arithmetic.Neg)
+          case "null" => Seq(MemoryAccess.Push(MemoryAccess.Segment.Constant, 0))
+          case "this" => ???
+        }
       case Expression.Braces(expr) => translate(expr, clSt, subSt)
       case Expression.Op(value) =>
         value match {
@@ -29,7 +27,7 @@ object ExpressionTranslator {
           case "=" => Seq(Arithmetic.Eq)
         }
 
-      case Expression.BinaryOp(first, op, second) =>
+      case Expression.BinaryOp(first, op, second) => // todo: braces for priority
         translate(first, clSt, subSt) ++ translate(second, clSt, subSt) ++ translate(
           op,
           clSt,
@@ -37,12 +35,7 @@ object ExpressionTranslator {
         )
       case Expression.VarName(name) =>
         val SymbolTable.Entry(kind, tp, index) = subSt.get(name)
-        val ms = kind match {
-          case "local" => MemoryAccess.Segment.Local
-          case "field" => MemoryAccess.Segment.This
-          case "static" => MemoryAccess.Segment.Static
-          case "argument" => MemoryAccess.Segment.Argument
-        }
+        val ms = Common.kindToSegment(kind)
         Seq(MemoryAccess.Push(ms, index))
       case Expression.VarAccess(name, expression) => ???
       case Expression.UnaryOpApply(op, term) =>

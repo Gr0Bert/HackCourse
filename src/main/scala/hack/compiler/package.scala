@@ -17,8 +17,8 @@ package object compiler {
         }
       }
 
-      def get(name: Token.Identifier): SymbolTable.Entry = {
-        entries(name)
+      def get(name: Token.Identifier): Option[SymbolTable.Entry] = {
+        entries.get(name)
       }
     }
 
