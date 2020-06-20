@@ -13,9 +13,11 @@ final class ExpressionTranslator(st: ComposedSymbolTable) {
           case "true" => Seq(MemoryAccess.Push(MemoryAccess.Segment.Constant, 0))
           case "false" => Seq(MemoryAccess.Push(MemoryAccess.Segment.Constant, 1), Arithmetic.Neg)
           case "null" => Seq(MemoryAccess.Push(MemoryAccess.Segment.Constant, 0))
-          case "this" => ???
+          case "this" =>  Seq(MemoryAccess.Pop(MemoryAccess.Segment.Pointer, 0))
         }
+
       case Expression.Braces(expr) => translate(expr)
+
       case Expression.Op(value) =>
         value match {
           case "+" => Seq(Arithmetic.Add)
@@ -31,11 +33,23 @@ final class ExpressionTranslator(st: ComposedSymbolTable) {
 
       case Expression.BinaryOp(first, op, second) => // todo: braces for priority
         translate(first) ++ translate(second) ++ translate(op)
+
       case Expression.VarName(name) =>
         val SymbolTable.Entry(kind, tp, index) = st.get(name)
         val ms = Common.kindToSegment(kind)
         Seq(MemoryAccess.Push(ms, index))
-      case Expression.VarAccess(name, expression) => ???
+
+      case Expression.VarAccess(name, expression) =>
+        val SymbolTable.Entry(kind, _, index) = st.get(name.name)
+        val segment = Common.kindToSegment(kind)
+        Seq(MemoryAccess.Push(segment, index)) ++
+          translate(expression) ++
+          Seq(
+            Arithmetic.Add,
+            MemoryAccess.Pop(MemoryAccess.Segment.Pointer, 1),
+            MemoryAccess.Push(MemoryAccess.Segment.That, 0)
+          )
+
       case Expression.UnaryOpApply(op, term) =>
         val operation = op.value match {
           case "-" => Arithmetic.Neg

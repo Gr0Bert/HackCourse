@@ -11,10 +11,22 @@ final class StatementTranslator(st: ComposedSymbolTable, className: String) {
     statement match {
       case Statement.Let(varName, expression, eqExpression) =>
         expression match {
-          case Some(arrayExpression) => ??? // todo: add array expr support
+          case Some(arrayExpression) =>
+            val SymbolTable.Entry(kind, _, index) = st.get(varName)
+            val segment = Common.kindToSegment(kind)
+            Seq(MemoryAccess.Push(segment, index)) ++
+            et.translate(arrayExpression) ++
+            Seq(Arithmetic.Add) ++
+            et.translate(eqExpression) ++
+            Seq(
+              MemoryAccess.Pop(MemoryAccess.Segment.Temp, 0),
+              MemoryAccess.Pop(MemoryAccess.Segment.Pointer, 1),
+              MemoryAccess.Push(MemoryAccess.Segment.Temp, 0),
+              MemoryAccess.Pop(MemoryAccess.Segment.That, 0)
+            )
+
           case None =>
-            val SymbolTable.Entry(kind, tp, index) =
-              st.get(varName)
+            val SymbolTable.Entry(kind, _, index) = st.get(varName)
             val segment = Common.kindToSegment(kind)
             et.translate(eqExpression) :+ MemoryAccess.Pop(segment, index)
         }
