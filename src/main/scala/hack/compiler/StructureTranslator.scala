@@ -1,5 +1,7 @@
 package hack.compiler
 
+import hack.compiler.Compiler.Structure.Type
+
 object StructureTranslator {
   import Compiler._
   import hack.vm.StackMachine._
@@ -12,14 +14,17 @@ object StructureTranslator {
         subroutineDec.flatMap {
           case Structure.SubroutineDec(
               keyword,
-              _,
+              tp,
               subroutineName,
               parameterList,
               _,
               subroutineStatements,
               symbolTable
-            ) =>
-            val st = new StatementTranslator(ComposedSymbolTable(symbolTable.get, classSymbolTable), className.value)
+              ) =>
+            val st = new StatementTranslator(
+              ComposedSymbolTable(symbolTable.get, classSymbolTable),
+              className.value
+            )
             keyword.value match {
               case "constructor" =>
                 translateConstructor(
@@ -30,15 +35,77 @@ object StructureTranslator {
                   classSize,
                   subroutineStatements,
                 )
-              case _ => ???
+              case "method" =>
+                val isVoid = tp match {
+                  case Type.Primitive(value) => value == "void"
+                  case Type.UserDefined(_) => false
+                }
+                translateMethod(
+                  st,
+                  className.value,
+                  subroutineName.value,
+                  parameterList.size,
+                  subroutineStatements,
+                  isVoid,
+                )
+              case "function" =>
+                val isVoid = tp match {
+                  case Type.Primitive(value) => value == "void"
+                  case Type.UserDefined(_) => false
+                }
+                translateFunction(
+                  st,
+                  className.value,
+                  subroutineName.value,
+                  parameterList.size,
+                  subroutineStatements,
+                  isVoid,
+                )
             }
         }
       case other => throw new RuntimeException(s"Expected class definition, found: $other")
     }
   }
 
-  private def translateMethod(): Seq[Command] = ???
-  private def translateFunction(): Seq[Command] = ???
+  private def translateMethod(
+    sTrans: StatementTranslator,
+    className: String,
+    subroutineName: String,
+    parametersCount: Int,
+    statements: Seq[Statement],
+    isVoid: Boolean,
+  ): Seq[Command] = {
+    Seq(
+      Function.Def(s"${className}.${subroutineName}", parametersCount),
+      MemoryAccess.Push(MemoryAccess.Segment.Argument, 0),
+      MemoryAccess.Pop(MemoryAccess.Segment.Pointer, 0),
+    ) ++
+      statements.flatMap(sTrans.translate) ++
+      (if (isVoid) {
+         Seq(MemoryAccess.Push(MemoryAccess.Segment.Constant, 0), Function.Return)
+       } else {
+         Seq(Function.Return)
+       })
+  }
+
+  private def translateFunction(
+    sTrans: StatementTranslator,
+    className: String,
+    subroutineName: String,
+    parametersCount: Int,
+    statements: Seq[Statement],
+    isVoid: Boolean,
+  ): Seq[Command] = {
+    Seq(
+      Function.Def(s"${className}.${subroutineName}", parametersCount),
+    ) ++
+      statements.flatMap(sTrans.translate) ++
+      (if (isVoid) {
+        Seq(MemoryAccess.Push(MemoryAccess.Segment.Constant, 0), Function.Return)
+      } else {
+        Seq(Function.Return)
+      })
+  }
 
   private def translateConstructor(
     sTrans: StatementTranslator,
