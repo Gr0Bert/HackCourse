@@ -42,7 +42,7 @@ object Main extends App {
     val vmCommands = StructureTranslator.translate(resolvedTree.asInstanceOf[Compiler.Structure])
     val fileNameTxt = filePath.getFileName.toString.replace(".jack", ".vm")
     val outputFilePath = Path.of(filePath.getParent.toString, s"$fileNameTxt").toString
-    writeToFile(outputFilePath, vmCommands.mkString(System.lineSeparator()))
+    writeToFile(outputFilePath, vmCommands.map(_.toString).mkString(System.lineSeparator()))
   }
 
   val pathRaw = "C:\\Users\\Tanya\\IdeaProjects\\HackCourse\\jack\\11\\Average"

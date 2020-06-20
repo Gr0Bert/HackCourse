@@ -22,12 +22,12 @@ final class ExpressionTranslator(st: ComposedSymbolTable) {
         value match {
           case "+" => Seq(Arithmetic.Add)
           case "-" => Seq(Arithmetic.Sub)
-          case "*" => Seq(Function.Call("Math.multiply", 2))
-          case "/" => Seq(Function.Call("Math.divide", 2))
-          case "&" => Seq(Arithmetic.And)
+          case "*" => translate(Expression.SubroutineCall.PlainSubroutineCall(Token.Identifier( "Math.multiply"), Seq.empty))
+          case "/" => translate(Expression.SubroutineCall.PlainSubroutineCall(Token.Identifier( "Math.divide"), Seq.empty))
+          case "&amp;" => Seq(Arithmetic.And)
           case "|" => Seq(Arithmetic.Or)
-          case "<" => Seq(Arithmetic.Lt)
-          case ">" => Seq(Arithmetic.Gt)
+          case "&lt;" => Seq(Arithmetic.Lt)
+          case "&gt;" => Seq(Arithmetic.Gt)
           case "=" => Seq(Arithmetic.Eq)
         }
 
@@ -60,7 +60,21 @@ final class ExpressionTranslator(st: ComposedSymbolTable) {
       case Expression.IntegerConstant(value) =>
         Seq(MemoryAccess.Push(MemoryAccess.Segment.Constant, value))
 
-      case Expression.StringConstant(value) => ???
+      case Expression.StringConstant(value) =>
+        translate {
+          Expression.SubroutineCall.PlainSubroutineCall(
+            subroutineName = Token.Identifier("String.new"),
+            expressionsList = Seq(Expression.IntegerConstant(value.length))
+          )
+        } ++
+        value.flatMap { c =>
+          translate {
+            Expression.SubroutineCall.PlainSubroutineCall(
+              subroutineName = Token.Identifier("String.appendChar"),
+              expressionsList = Seq(Expression.IntegerConstant(c.toInt))
+            )
+          }
+        }
 
       case Expression.SubroutineCall.PlainSubroutineCall(name, expressions) =>
         expressions.flatMap(e => translate(e)) :+ Function.Call(name.value, expressions.size)
@@ -89,7 +103,7 @@ final class ExpressionTranslator(st: ComposedSymbolTable) {
             if (receiverName.value.head.isUpper) {
               translate(
                 inner.copy(subroutineName =
-                  Token.Identifier(s"$receiverName.${inner.subroutineName.value}")
+                  Token.Identifier(s"${receiverName.value}.${inner.subroutineName.value}")
                 )
               )
             } else {

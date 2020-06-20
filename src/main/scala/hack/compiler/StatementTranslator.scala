@@ -45,7 +45,7 @@ final class StatementTranslator(st: ComposedSymbolTable, className: String) {
         val loopLabel = s"while_${className}_${labelCount}_loop"
         val endLabel = s"while_${className}_${labelCount}_end"
         labelCount += 1
-        Seq(Branching.Label(loopLabel))
+        Seq(Branching.Label(loopLabel)) ++
         et.translate(expression) ++
         Seq(Arithmetic.Not, Branching.IfGoTo(endLabel)) ++
         statements.flatMap(translate) ++
