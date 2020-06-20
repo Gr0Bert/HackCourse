@@ -25,13 +25,14 @@ object StructureTranslator {
               ComposedSymbolTable(symbolTable.get, classSymbolTable),
               className.value
             )
+            val localSize = symbolTable.get.entries.values.count(_.kind.value == "local")
             keyword.value match {
               case "constructor" =>
                 translateConstructor(
                   st,
                   className.value,
                   subroutineName.value,
-                  parameterList.size,
+                  localSize,
                   classSize,
                   subroutineStatements,
                 )
@@ -44,7 +45,7 @@ object StructureTranslator {
                   st,
                   className.value,
                   subroutineName.value,
-                  parameterList.size,
+                  localSize,
                   subroutineStatements,
                   isVoid,
                 )
