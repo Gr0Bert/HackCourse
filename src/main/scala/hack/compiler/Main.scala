@@ -39,13 +39,13 @@ object Main extends App {
     val contents = readFile(filePath.toAbsolutePath.toString).get
     val ast = compile(contents)
     val resolvedTree = SymbolTableResolver.resolve(ast)
-    println(resolvedTree)
-    val fileNameTxt = filePath.getFileName.toString.replace(".jack", ".xml")
-    val outputFilePath = Path.of(filePath.getParent.toString, s"m_$fileNameTxt").toString
-    writeToFile(outputFilePath, ast.toXml)
+    val vmCommands = StructureTranslator.translate(resolvedTree.asInstanceOf[Compiler.Structure])
+    val fileNameTxt = filePath.getFileName.toString.replace(".jack", ".vm")
+    val outputFilePath = Path.of(filePath.getParent.toString, s"$fileNameTxt").toString
+    writeToFile(outputFilePath, vmCommands.mkString(System.lineSeparator()))
   }
 
-  val pathRaw = "C:\\Users\\Tanya\\IdeaProjects\\HackCourse\\jack\\10\\Square"
+  val pathRaw = "C:\\Users\\Tanya\\IdeaProjects\\HackCourse\\jack\\11\\Average"
   val path = Path.of(pathRaw)
   if (Files.isDirectory(path)) {
     import scala.jdk.CollectionConverters._

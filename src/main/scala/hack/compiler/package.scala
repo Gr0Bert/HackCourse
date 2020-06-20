@@ -4,11 +4,14 @@ package object compiler {
   object Compiler {
     final case class ComposedSymbolTable(subSt: SymbolTable, clSt: SymbolTable) {
       def get(name: Token.Identifier): SymbolTable.Entry = {
-        subSt
-          .get(name)
-          .orElse(clSt.get(name))
+        safeGet(name)
           .getOrElse(throw new RuntimeException(s"Undefined variable $name"))
       }
+      def safeGet(name: Token.Identifier): Option[SymbolTable.Entry] = {
+          subSt
+            .get(name)
+            .orElse(clSt.get(name))
+        }
     }
 
     final case class SymbolTable(entries: Map[Token.Identifier, SymbolTable.Entry]) {

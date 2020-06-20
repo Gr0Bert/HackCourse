@@ -66,24 +66,37 @@ final class ExpressionTranslator(st: ComposedSymbolTable) {
         expressions.flatMap(e => translate(e)) :+ Function.Call(name.value, expressions.size)
 
       case Expression.SubroutineCall.ClassSubroutineCall(receiverName, inner) =>
-        val receiver = st.get(receiverName)
-        val receiverIndex = receiver.index
-        val receiverType = receiver.`type` match {
-          case Type.Primitive(value) =>
-            throw new RuntimeException(
-              s"Attempt to perform method call `$receiverName.${inner.subroutineName.value}` on primitive: $value"
-            )
-          case Type.UserDefined(value) => value
+        st.safeGet(receiverName) match {
+          case Some(receiver) =>
+            val receiverIndex = receiver.index
+            val receiverType = receiver.`type` match {
+              case Type.Primitive(value) =>
+                throw new RuntimeException(
+                  s"Attempt to perform method call `$receiverName.${inner.subroutineName.value}` on primitive: $value"
+                )
+              case Type.UserDefined(value) => value
+            }
+            val receiverMs = Common.kindToSegment(receiver.kind)
+            Seq(
+              MemoryAccess.Push(receiverMs, receiverIndex)
+            ) ++
+              translate(
+                inner.copy(subroutineName =
+                  Token.Identifier(s"$receiverType.${inner.subroutineName.value}")
+                )
+              )
+          case None =>
+            if (receiverName.value.head.isUpper) {
+              translate(
+                inner.copy(subroutineName =
+                  Token.Identifier(s"$receiverName.${inner.subroutineName.value}")
+                )
+              )
+            } else {
+              throw new RuntimeException(s"Unknown identifier: $receiverName")
+            }
         }
-        val receiverMs = Common.kindToSegment(receiver.kind)
-        Seq(
-          MemoryAccess.Push(receiverMs, receiverIndex)
-        ) ++
-          translate(
-            inner.copy(subroutineName =
-              Token.Identifier(s"$receiverType.${inner.subroutineName.value}")
-            )
-          )
+
     }
   }
 }
