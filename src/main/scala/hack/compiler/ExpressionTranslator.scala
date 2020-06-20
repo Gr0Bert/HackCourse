@@ -66,15 +66,16 @@ final class ExpressionTranslator(st: ComposedSymbolTable) {
             subroutineName = Token.Identifier("String.new"),
             expressionsList = Seq(Expression.IntegerConstant(value.length))
           )
-        } ++
-        value.flatMap { c =>
-          translate {
-            Expression.SubroutineCall.PlainSubroutineCall(
-              subroutineName = Token.Identifier("String.appendChar"),
-              expressionsList = Seq(Expression.IntegerConstant(c.toInt))
-            )
-          }
         }
+//        ++
+//        value.flatMap { c =>
+//          translate {
+//            Expression.SubroutineCall.PlainSubroutineCall(
+//              subroutineName = Token.Identifier("String.appendChar"),
+//              expressionsList = Seq(Expression.IntegerConstant(c.toInt))
+//            )
+//          }
+//        }
 
       case Expression.SubroutineCall.PlainSubroutineCall(name, expressions) =>
         expressions.flatMap(e => translate(e)) :+ Function.Call(name.value, expressions.size)
