@@ -4,7 +4,7 @@ import hack.compiler.Compiler.Token.Keyword
 import hack.vm.StackMachine.MemoryAccess
 
 object Common {
-  def kindToSegment(kind: Keyword): MemoryAccess.Segment = kind match {
+  def kindToSegment(kind: Keyword): MemoryAccess.Segment = kind.value match {
     case "local" => MemoryAccess.Segment.Local
     case "field" => MemoryAccess.Segment.This
     case "static" => MemoryAccess.Segment.Static

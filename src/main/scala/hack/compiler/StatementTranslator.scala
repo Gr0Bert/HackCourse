@@ -1,33 +1,32 @@
 package hack.compiler
 
-object StatementTranslator {
-  import Compiler._
-  import hack.vm.StackMachine._
+import Compiler._
+import hack.vm.StackMachine._
+
+final class StatementTranslator(st: ComposedSymbolTable, className: String) {
+  val et = new ExpressionTranslator(st)
 
   var labelCount = 0
-  def translate(statement: Statement, className: String, clSt: SymbolTable, subSt: SymbolTable): Seq[Command] = {
+  def translate(statement: Statement): Seq[Command] = {
     statement match {
       case Statement.Let(varName, expression, eqExpression) =>
         expression match {
           case Some(arrayExpression) => ??? // todo: add array expr support
           case None =>
             val SymbolTable.Entry(kind, tp, index) =
-              subSt
-                .get(varName)
-                .orElse(clSt.get(varName))
-                .getOrElse(throw new RuntimeException(s"Undefined variable $varName"))
+              st.get(varName)
             val segment = Common.kindToSegment(kind)
-            ExpressionTranslator.translate(eqExpression, clSt, subSt) :+ MemoryAccess.Pop(segment, index)
+            et.translate(eqExpression) :+ MemoryAccess.Pop(segment, index)
         }
       case Statement.If(expression, trueCond, falseCond) =>
         val falseLabel = s"if_${className}_${labelCount}_false"
         val trueLabel = s"if_${className}_${labelCount}_true"
         labelCount += 1
-        ExpressionTranslator.translate(expression, clSt, subSt) ++
+        et.translate(expression) ++
           Seq(Arithmetic.Not, Branching.IfGoTo(falseLabel)) ++
-          trueCond.flatMap(translate(_, className, clSt, subSt)) ++
+          trueCond.flatMap(translate) ++
           Seq(Branching.GoTo(trueLabel), Branching.Label(falseLabel)) ++
-          falseCond.toList.flatten.flatMap(translate(_, className, clSt, subSt)) ++
+          falseCond.toList.flatten.flatMap(translate) ++
           Seq(Branching.Label(trueLabel))
 
       case Statement.While(expression, statements) =>
@@ -35,9 +34,9 @@ object StatementTranslator {
         val endLabel = s"while_${className}_${labelCount}_end"
         labelCount += 1
         Seq(Branching.Label(loopLabel))
-        ExpressionTranslator.translate(expression, clSt, subSt) ++
+        et.translate(expression) ++
         Seq(Arithmetic.Not, Branching.IfGoTo(endLabel)) ++
-        statements.map(translate(_, className, clSt, subSt)) ++
+        statements.flatMap(translate) ++
         Seq(Branching.GoTo(loopLabel), Branching.Label(endLabel))
 
       case Statement.Do(subroutineCall) => ???

@@ -2,6 +2,15 @@ package hack
 
 package object compiler {
   object Compiler {
+    final case class ComposedSymbolTable(subSt: SymbolTable, clSt: SymbolTable) {
+      def get(name: Token.Identifier): SymbolTable.Entry = {
+        subSt
+          .get(name)
+          .orElse(clSt.get(name))
+          .getOrElse(throw new RuntimeException(s"Undefined variable $name"))
+      }
+    }
+
     final case class SymbolTable(entries: Map[Token.Identifier, SymbolTable.Entry]) {
       def update(
         kind: Token.Keyword,
@@ -20,6 +29,8 @@ package object compiler {
       def get(name: Token.Identifier): Option[SymbolTable.Entry] = {
         entries.get(name)
       }
+
+      def compose(that: SymbolTable): ComposedSymbolTable = ComposedSymbolTable(this, that)
     }
 
     object SymbolTable {
@@ -83,13 +94,23 @@ package object compiler {
         }
       }
 
-      sealed trait Type extends Structure
+      sealed trait Type extends Structure {
+        def size: Int
+      }
       object Type {
         final case class Primitive(value: String) extends Type {
           override def toXml: String = s"<keyword> $value </keyword>"
+
+          override def size: Int = value match {
+            case "void" => ???
+            case _ => 1
+
+          }
         }
         final case class UserDefined(value: Token.Identifier) extends Type {
           override def toXml: String = s"${value.toXml}"
+
+          override def size: Int = 1
         }
       }
 
@@ -389,12 +410,12 @@ package object compiler {
         }
 
         final case class ClassSubroutineCall(
-          name: Token.Identifier,
+          receiverName: Token.Identifier,
           plainSubroutineCall: PlainSubroutineCall
         ) extends SubroutineCall {
           override def toXml: String = {
             s"""<term>
-               |${name.toXml}
+               |${receiverName.toXml}
                |<symbol> . </symbol>
                |${plainSubroutineCall.subroutineName.toXml}
                |<symbol> ( </symbol>

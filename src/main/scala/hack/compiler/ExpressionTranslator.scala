@@ -1,10 +1,12 @@
 package hack.compiler
 
-object ExpressionTranslator {
-  import Compiler._
-  import hack.vm.StackMachine._
+import Compiler._
+import hack.compiler.Compiler.Structure.Type
+import hack.vm.StackMachine._
 
-  def translate(expression: Expression, clSt: SymbolTable, subSt: SymbolTable): Seq[Command] = {
+final class ExpressionTranslator(st: ComposedSymbolTable) {
+
+  def translate(expression: Expression): Seq[Command] = {
     expression match {
       case Expression.KeywordConstant(value) =>
         value match {
@@ -13,7 +15,7 @@ object ExpressionTranslator {
           case "null" => Seq(MemoryAccess.Push(MemoryAccess.Segment.Constant, 0))
           case "this" => ???
         }
-      case Expression.Braces(expr) => translate(expr, clSt, subSt)
+      case Expression.Braces(expr) => translate(expr)
       case Expression.Op(value) =>
         value match {
           case "+" => Seq(Arithmetic.Add)
@@ -28,36 +30,46 @@ object ExpressionTranslator {
         }
 
       case Expression.BinaryOp(first, op, second) => // todo: braces for priority
-        translate(first, clSt, subSt) ++ translate(second, clSt, subSt) ++ translate(
-          op,
-          clSt,
-          subSt
-        )
+        translate(first) ++ translate(second) ++ translate(op)
       case Expression.VarName(name) =>
-        val SymbolTable.Entry(kind, tp, index) = subSt.get(name)
+        val SymbolTable.Entry(kind, tp, index) = st.get(name)
         val ms = Common.kindToSegment(kind)
         Seq(MemoryAccess.Push(ms, index))
       case Expression.VarAccess(name, expression) => ???
       case Expression.UnaryOpApply(op, term) =>
-        val operation = op match {
+        val operation = op.value match {
           case "-" => Arithmetic.Neg
           case "~" => Arithmetic.Not
         }
-        translate(term, clSt, subSt) :+ operation
+        translate(term) :+ operation
+
       case Expression.IntegerConstant(value) =>
         Seq(MemoryAccess.Push(MemoryAccess.Segment.Constant, value))
+
       case Expression.StringConstant(value) => ???
+
       case Expression.SubroutineCall.PlainSubroutineCall(name, expressions) =>
-        expressions.flatMap(e => translate(e, clSt, subSt)) :+ Function
-          .Call(name.value, expressions.size)
-      case Expression.SubroutineCall.ClassSubroutineCall(className, inner) =>
-        translate(
-          expression = inner.copy(subroutineName =
-            Token.Identifier(s"${className.value}.${inner.subroutineName.value}")
-          ),
-          clSt = clSt,
-          subSt = subSt
-        )
+        expressions.flatMap(e => translate(e)) :+ Function.Call(name.value, expressions.size)
+
+      case Expression.SubroutineCall.ClassSubroutineCall(receiverName, inner) =>
+        val receiver = st.get(receiverName)
+        val receiverIndex = receiver.index
+        val receiverType = receiver.`type` match {
+          case Type.Primitive(value) =>
+            throw new RuntimeException(
+              s"Attempt to perform method call `$receiverName.${inner.subroutineName.value}` on primitive: $value"
+            )
+          case Type.UserDefined(value) => value
+        }
+        val receiverMs = Common.kindToSegment(receiver.kind)
+        Seq(
+          MemoryAccess.Push(receiverMs, receiverIndex)
+        ) ++
+          translate(
+            inner.copy(subroutineName =
+              Token.Identifier(s"$receiverType.${inner.subroutineName.value}")
+            )
+          )
     }
   }
 }
