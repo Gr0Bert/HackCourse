@@ -61,21 +61,15 @@ final class ExpressionTranslator(st: ComposedSymbolTable) {
         Seq(MemoryAccess.Push(MemoryAccess.Segment.Constant, value))
 
       case Expression.StringConstant(value) =>
-        translate {
-          Expression.SubroutineCall.PlainSubroutineCall(
-            subroutineName = Token.Identifier("String.new"),
-            expressionsList = Seq(Expression.IntegerConstant(value.length))
+        Seq(
+          MemoryAccess.Push(MemoryAccess.Segment.Constant, value.length),
+          Function.Call("String.new", 1)
+        ) ++ value.flatMap { c =>
+          Seq(
+            MemoryAccess.Push(MemoryAccess.Segment.Constant, c.toInt),
+            Function.Call("String.appendChar", 2)
           )
         }
-//        ++
-//        value.flatMap { c =>
-//          translate {
-//            Expression.SubroutineCall.PlainSubroutineCall(
-//              subroutineName = Token.Identifier("String.appendChar"),
-//              expressionsList = Seq(Expression.IntegerConstant(c.toInt))
-//            )
-//          }
-//        }
 
       case Expression.SubroutineCall.PlainSubroutineCall(name, expressions) =>
         expressions.flatMap(e => translate(e)) :+ Function.Call(name.value, expressions.size)
@@ -92,14 +86,10 @@ final class ExpressionTranslator(st: ComposedSymbolTable) {
               case Type.UserDefined(value) => value
             }
             val receiverMs = Common.kindToSegment(receiver.kind)
-            Seq(
-              MemoryAccess.Push(receiverMs, receiverIndex)
-            ) ++
-              translate(
-                inner.copy(subroutineName =
-                  Token.Identifier(s"$receiverType.${inner.subroutineName.value}")
-                )
-              )
+            Seq(MemoryAccess.Push(receiverMs, receiverIndex)) ++
+              inner.expressionsList.flatMap(e => translate(e)) ++
+              Seq(Function.Call(s"$receiverType.${inner.subroutineName.value}", inner.expressionsList.size + 1))
+
           case None =>
             if (receiverName.value.head.isUpper) {
               translate(

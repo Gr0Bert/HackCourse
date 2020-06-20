@@ -45,7 +45,7 @@ object Main extends App {
     writeToFile(outputFilePath, vmCommands.map(_.toString).mkString(System.lineSeparator()))
   }
 
-  val pathRaw = "C:\\Users\\Tanya\\IdeaProjects\\HackCourse\\jack\\11\\Average"
+  val pathRaw = "C:\\Users\\Tanya\\IdeaProjects\\HackCourse\\jack\\11\\ConvertToBin"
   val path = Path.of(pathRaw)
   if (Files.isDirectory(path)) {
     import scala.jdk.CollectionConverters._
