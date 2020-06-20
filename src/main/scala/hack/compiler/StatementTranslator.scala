@@ -39,8 +39,13 @@ final class StatementTranslator(st: ComposedSymbolTable, className: String) {
         statements.flatMap(translate) ++
         Seq(Branching.GoTo(loopLabel), Branching.Label(endLabel))
 
-      case Statement.Do(subroutineCall) => ???
-      case Statement.Return(expression) => ???
+      case Statement.Do(subroutineCall) =>
+        et.translate(subroutineCall) ++ Seq(MemoryAccess.Pop(MemoryAccess.Segment.Temp, 0))
+
+      case Statement.Return(expression) => expression match {
+        case Some(value) => et.translate(value) ++ Seq(Function.Return)
+        case None => Seq(Function.Return)
+      }
     }
   }
 }
