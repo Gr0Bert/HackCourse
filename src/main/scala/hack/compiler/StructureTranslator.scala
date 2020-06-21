@@ -58,7 +58,7 @@ object StructureTranslator {
                   st,
                   className.value,
                   subroutineName.value,
-                  parameterList.size,
+                  localSize,
                   subroutineStatements,
                   isVoid,
                 )
@@ -72,12 +72,12 @@ object StructureTranslator {
     sTrans: StatementTranslator,
     className: String,
     subroutineName: String,
-    parametersCount: Int,
+    localVarsCount: Int,
     statements: Seq[Statement],
     isVoid: Boolean,
   ): Seq[Command] = {
     Seq(
-      Function.Def(s"${className}.${subroutineName}", parametersCount),
+      Function.Def(s"${className}.${subroutineName}", localVarsCount),
       MemoryAccess.Push(MemoryAccess.Segment.Argument, 0),
       MemoryAccess.Pop(MemoryAccess.Segment.Pointer, 0),
     ) ++
@@ -93,19 +93,19 @@ object StructureTranslator {
     sTrans: StatementTranslator,
     className: String,
     subroutineName: String,
-    parametersCount: Int,
+    localVarsCount: Int,
     statements: Seq[Statement],
     isVoid: Boolean,
   ): Seq[Command] = {
     Seq(
-      Function.Def(s"${className}.${subroutineName}", parametersCount),
+      Function.Def(s"${className}.${subroutineName}", localVarsCount),
     ) ++
       statements.flatMap(sTrans.translate) ++
       (if (isVoid) {
-        Seq(MemoryAccess.Push(MemoryAccess.Segment.Constant, 0), Function.Return)
-      } else {
-        Seq(Function.Return)
-      })
+         Seq(MemoryAccess.Push(MemoryAccess.Segment.Constant, 0), Function.Return)
+       } else {
+         Seq(Function.Return)
+       })
   }
 
   private def translateConstructor(

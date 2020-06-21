@@ -10,8 +10,8 @@ final class ExpressionTranslator(st: ComposedSymbolTable) {
     expression match {
       case Expression.KeywordConstant(value) =>
         value match {
-          case "true" => Seq(MemoryAccess.Push(MemoryAccess.Segment.Constant, 0))
-          case "false" => Seq(MemoryAccess.Push(MemoryAccess.Segment.Constant, 1), Arithmetic.Neg)
+          case "true" => Seq(MemoryAccess.Push(MemoryAccess.Segment.Constant, 1), Arithmetic.Neg)
+          case "false" => Seq(MemoryAccess.Push(MemoryAccess.Segment.Constant, 0))
           case "null" => Seq(MemoryAccess.Push(MemoryAccess.Segment.Constant, 0))
           case "this" =>  Seq(MemoryAccess.Pop(MemoryAccess.Segment.Pointer, 0))
         }
@@ -22,8 +22,8 @@ final class ExpressionTranslator(st: ComposedSymbolTable) {
         value match {
           case "+" => Seq(Arithmetic.Add)
           case "-" => Seq(Arithmetic.Sub)
-          case "*" => translate(Expression.SubroutineCall.PlainSubroutineCall(Token.Identifier( "Math.multiply"), Seq.empty))
-          case "/" => translate(Expression.SubroutineCall.PlainSubroutineCall(Token.Identifier( "Math.divide"), Seq.empty))
+          case "*" => Seq(Function.Call("Math.multiply", 2))
+          case "/" => Seq(Function.Call("Math.divide", 2))
           case "&amp;" => Seq(Arithmetic.And)
           case "|" => Seq(Arithmetic.Or)
           case "&lt;" => Seq(Arithmetic.Lt)
@@ -31,8 +31,13 @@ final class ExpressionTranslator(st: ComposedSymbolTable) {
           case "=" => Seq(Arithmetic.Eq)
         }
 
-      case Expression.BinaryOp(first, op, second) => // todo: braces for priority
-        translate(first) ++ translate(second) ++ translate(op)
+      case Expression.BinaryOp(first, op, second) =>
+        val secondFirst = second.isInstanceOf[Expression.Braces]
+        if (secondFirst) {
+          translate(second) ++ translate(first) ++ translate(op)
+        } else {
+          translate(first) ++ translate(second) ++ translate(op)
+        }
 
       case Expression.VarName(name) =>
         val SymbolTable.Entry(kind, tp, index) = st.get(name)
