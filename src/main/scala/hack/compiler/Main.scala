@@ -21,7 +21,7 @@ object Main extends App {
     }
   }
 
-  def compile(contents: String) = {
+  def compile(contents: String, path: Path) = {
     val parsingResult = Parser.parseRaw(contents)
     parsingResult match {
       case Left((failureString, index, extra)) =>
@@ -29,7 +29,7 @@ object Main extends App {
         println(failureString)
         println(extra.stack)
         println(extra.trace(true))
-        throw new RuntimeException("Failed to compile")
+        throw new RuntimeException(s"Failed to compile $path")
       case Right((_, expressions)) =>
         expressions
     }
@@ -37,7 +37,7 @@ object Main extends App {
 
   def processFile(filePath: Path) = {
     val contents = readFile(filePath.toAbsolutePath.toString).get
-    val ast = compile(contents)
+    val ast = compile(contents, filePath)
     val resolvedTree = SymbolTableResolver.resolve(ast)
     val vmCommands = StructureTranslator.translate(resolvedTree.asInstanceOf[Compiler.Structure])
     val fileNameTxt = filePath.getFileName.toString.replace(".jack", ".vm")
@@ -45,7 +45,7 @@ object Main extends App {
     writeToFile(outputFilePath, vmCommands.map(_.toString).mkString(System.lineSeparator()))
   }
 
-  val pathRaw = "C:\\Users\\Tanya\\IdeaProjects\\HackCourse\\jack\\11\\ConvertToBin"
+  val pathRaw = "C:\\Users\\Tanya\\IdeaProjects\\HackCourse\\jack\\11\\Square"
   val path = Path.of(pathRaw)
   if (Files.isDirectory(path)) {
     import scala.jdk.CollectionConverters._

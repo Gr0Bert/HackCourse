@@ -76,17 +76,17 @@ object StructureTranslator {
     statements: Seq[Statement],
     isVoid: Boolean,
   ): Seq[Command] = {
-    Seq(
+    val commands = Seq(
       Function.Def(s"${className}.${subroutineName}", localVarsCount),
       MemoryAccess.Push(MemoryAccess.Segment.Argument, 0),
       MemoryAccess.Pop(MemoryAccess.Segment.Pointer, 0),
-    ) ++
-      statements.flatMap(sTrans.translate) ++
-      (if (isVoid) {
-         Seq(MemoryAccess.Push(MemoryAccess.Segment.Constant, 0), Function.Return)
-       } else {
-         Seq(Function.Return)
-       })
+    ) ++ statements.flatMap(sTrans.translate)
+
+    if (isVoid) {
+      addVoid(commands)
+    } else {
+      commands
+    }
   }
 
   private def translateFunction(
@@ -97,15 +97,20 @@ object StructureTranslator {
     statements: Seq[Statement],
     isVoid: Boolean,
   ): Seq[Command] = {
-    Seq(
-      Function.Def(s"${className}.${subroutineName}", localVarsCount),
-    ) ++
-      statements.flatMap(sTrans.translate) ++
-      (if (isVoid) {
-         Seq(MemoryAccess.Push(MemoryAccess.Segment.Constant, 0), Function.Return)
-       } else {
-         Seq(Function.Return)
-       })
+    val commands = Seq(Function.Def(s"${className}.${subroutineName}", localVarsCount)) ++ statements
+      .flatMap(sTrans.translate)
+    if (isVoid) {
+      addVoid(commands)
+    } else {
+      commands
+    }
+  }
+
+  private def addVoid(commands: Seq[Command]) = {
+    val rv = commands.reverse
+    val ret = rv.head
+    val res = rv.tail.reverse
+    res ++ Seq(MemoryAccess.Push(MemoryAccess.Segment.Constant, 0)) ++ Seq(ret)
   }
 
   private def translateConstructor(
@@ -123,9 +128,6 @@ object StructureTranslator {
       MemoryAccess.Pop(MemoryAccess.Segment.Pointer, 0)
     ) ++
       statements.flatMap(sTrans.translate) ++
-      Seq(
-        MemoryAccess.Push(MemoryAccess.Segment.Pointer, 0),
-        Function.Return,
-      )
+      Seq(MemoryAccess.Push(MemoryAccess.Segment.Pointer, 0))
   }
 }

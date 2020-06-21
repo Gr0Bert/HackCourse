@@ -54,7 +54,9 @@ final class StatementTranslator(st: ComposedSymbolTable, className: String) {
       case Statement.Do(subroutineCall) =>
         et.translate(subroutineCall) ++ Seq(MemoryAccess.Pop(MemoryAccess.Segment.Temp, 0))
 
-      case Statement.Return(expression) => expression match {
+      case r@Statement.Return(expression) =>
+        println(s"RETURN: $r")
+        expression match {
         case Some(value) => et.translate(value) ++ Seq(Function.Return)
         case None => Seq(Function.Return)
       }

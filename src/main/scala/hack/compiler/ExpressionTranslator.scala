@@ -93,7 +93,7 @@ final class ExpressionTranslator(st: ComposedSymbolTable) {
             val receiverMs = Common.kindToSegment(receiver.kind)
             Seq(MemoryAccess.Push(receiverMs, receiverIndex)) ++
               inner.expressionsList.flatMap(e => translate(e)) ++
-              Seq(Function.Call(s"$receiverType.${inner.subroutineName.value}", inner.expressionsList.size + 1))
+              Seq(Function.Call(s"${receiverType.value}.${inner.subroutineName.value}", inner.expressionsList.size + 1))
 
           case None =>
             if (receiverName.value.head.isUpper) {
