@@ -3,8 +3,8 @@ package hack.compiler
 import Compiler._
 import hack.vm.StackMachine._
 
-final class StatementTranslator(st: ComposedSymbolTable, className: String) {
-  val et = new ExpressionTranslator(st)
+final class StatementTranslator(st: ComposedSymbolTable, fSt: FunctionSymbolTable, className: String) {
+  val et = new ExpressionTranslator(st, fSt, className)
 
   var labelCount = 0
   def translate(statement: Statement): Seq[Command] = {
@@ -55,7 +55,6 @@ final class StatementTranslator(st: ComposedSymbolTable, className: String) {
         et.translate(subroutineCall) ++ Seq(MemoryAccess.Pop(MemoryAccess.Segment.Temp, 0))
 
       case r@Statement.Return(expression) =>
-        println(s"RETURN: $r")
         expression match {
         case Some(value) => et.translate(value) ++ Seq(Function.Return)
         case None => Seq(Function.Return)

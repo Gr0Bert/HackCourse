@@ -8,7 +8,7 @@ object StructureTranslator {
 
   def translate(structure: Structure): Seq[Command] = {
     structure match {
-      case Structure.ClassStruct(className, _, subroutineDec, clSt) =>
+      case Structure.ClassStruct(className, _, subroutineDec, clSt, fSt) =>
         val classSymbolTable = clSt.get
         val classSize = classSymbolTable.entries.values.map(_.`type`.size).sum
         subroutineDec.flatMap {
@@ -23,7 +23,8 @@ object StructureTranslator {
               ) =>
             val st = new StatementTranslator(
               ComposedSymbolTable(symbolTable.get, classSymbolTable),
-              className.value
+              fSt.get,
+              className.value,
             )
             val localSize = symbolTable.get.entries.values.count(_.kind.value == "local")
             keyword.value match {
@@ -83,7 +84,7 @@ object StructureTranslator {
     ) ++ statements.flatMap(sTrans.translate)
 
     if (isVoid) {
-      addVoid(commands)
+      interceptReturn(commands, Seq(MemoryAccess.Push(MemoryAccess.Segment.Constant, 0)))
     } else {
       commands
     }
@@ -100,17 +101,17 @@ object StructureTranslator {
     val commands = Seq(Function.Def(s"${className}.${subroutineName}", localVarsCount)) ++ statements
       .flatMap(sTrans.translate)
     if (isVoid) {
-      addVoid(commands)
+      interceptReturn(commands, Seq(MemoryAccess.Push(MemoryAccess.Segment.Constant, 0)))
     } else {
       commands
     }
   }
 
-  private def addVoid(commands: Seq[Command]) = {
+  private def interceptReturn(commands: Seq[Command], interceptor: Seq[Command]) = {
     val rv = commands.reverse
     val ret = rv.head
     val res = rv.tail.reverse
-    res ++ Seq(MemoryAccess.Push(MemoryAccess.Segment.Constant, 0)) ++ Seq(ret)
+    res ++ interceptor ++ Seq(ret)
   }
 
   private def translateConstructor(
@@ -126,8 +127,6 @@ object StructureTranslator {
       MemoryAccess.Push(MemoryAccess.Segment.Constant, classSize),
       Function.Call("Memory.alloc", 1),
       MemoryAccess.Pop(MemoryAccess.Segment.Pointer, 0)
-    ) ++
-      statements.flatMap(sTrans.translate) ++
-      Seq(MemoryAccess.Push(MemoryAccess.Segment.Pointer, 0))
+    ) ++ statements.flatMap(sTrans.translate)
   }
 }

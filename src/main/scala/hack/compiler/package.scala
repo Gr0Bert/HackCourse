@@ -46,6 +46,11 @@ package object compiler {
       def empty: SymbolTable = SymbolTable(Map.empty)
     }
 
+    case class FunctionSymbolTable(entries: Map[Token.Identifier, Token.Keyword]) {
+      def update(name: Token.Identifier, tp: Token.Keyword): Map[Token.Identifier, Token.Keyword] = entries.updated(name, tp)
+      def get(name: Token.Identifier): String = entries(name).value
+    }
+
     sealed trait AST {
       def toXml: String
     }
@@ -69,6 +74,7 @@ package object compiler {
         classVarDec: Seq[ClassVarDec],
         subroutineDec: Seq[SubroutineDec],
         symbolTable: Option[SymbolTable] = None,
+        functionSymbolTable: Option[FunctionSymbolTable] = None,
       ) extends Structure {
         override def toXml: String = {
           s"""<class>

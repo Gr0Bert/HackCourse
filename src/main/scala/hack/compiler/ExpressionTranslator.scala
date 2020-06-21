@@ -4,7 +4,7 @@ import Compiler._
 import hack.compiler.Compiler.Structure.Type
 import hack.vm.StackMachine._
 
-final class ExpressionTranslator(st: ComposedSymbolTable) {
+final class ExpressionTranslator(st: ComposedSymbolTable, fSt: FunctionSymbolTable, className: String) {
 
   def translate(expression: Expression): Seq[Command] = {
     expression match {
@@ -13,7 +13,7 @@ final class ExpressionTranslator(st: ComposedSymbolTable) {
           case "true" => Seq(MemoryAccess.Push(MemoryAccess.Segment.Constant, 1), Arithmetic.Neg)
           case "false" => Seq(MemoryAccess.Push(MemoryAccess.Segment.Constant, 0))
           case "null" => Seq(MemoryAccess.Push(MemoryAccess.Segment.Constant, 0))
-          case "this" =>  Seq(MemoryAccess.Pop(MemoryAccess.Segment.Pointer, 0))
+          case "this" => Seq(MemoryAccess.Push(MemoryAccess.Segment.Pointer, 0))
         }
 
       case Expression.Braces(expr) => translate(expr)
@@ -77,7 +77,10 @@ final class ExpressionTranslator(st: ComposedSymbolTable) {
         }
 
       case Expression.SubroutineCall.PlainSubroutineCall(name, expressions) =>
-        expressions.flatMap(e => translate(e)) :+ Function.Call(name.value, expressions.size)
+        fSt.get(name) match {
+          case "function" => expressions.flatMap(e => translate(e)) :+ Function.Call(name.value, expressions.size)
+          case "method" =>  Seq(MemoryAccess.Push(MemoryAccess.Segment.Pointer, 0)) ++ expressions.flatMap(e => translate(e)) :+ Function.Call(s"$className.${name.value}", expressions.size + 1)
+        }
 
       case Expression.SubroutineCall.ClassSubroutineCall(receiverName, inner) =>
         st.safeGet(receiverName) match {
@@ -93,15 +96,18 @@ final class ExpressionTranslator(st: ComposedSymbolTable) {
             val receiverMs = Common.kindToSegment(receiver.kind)
             Seq(MemoryAccess.Push(receiverMs, receiverIndex)) ++
               inner.expressionsList.flatMap(e => translate(e)) ++
-              Seq(Function.Call(s"${receiverType.value}.${inner.subroutineName.value}", inner.expressionsList.size + 1))
-
-          case None =>
-            if (receiverName.value.head.isUpper) {
-              translate(
-                inner.copy(subroutineName =
-                  Token.Identifier(s"${receiverName.value}.${inner.subroutineName.value}")
+              Seq(
+                Function.Call(
+                  s"${receiverType.value}.${inner.subroutineName.value}",
+                  inner.expressionsList.size + 1
                 )
               )
+
+          case None =>
+            if (receiverName.value.head.isUpper) { // constructor call
+              inner.expressionsList.flatMap(e => translate(e)) :+ {
+                Function.Call(s"${receiverName.value}.${inner.subroutineName.value}", inner.expressionsList.size)
+              }
             } else {
               throw new RuntimeException(s"Unknown identifier: $receiverName")
             }

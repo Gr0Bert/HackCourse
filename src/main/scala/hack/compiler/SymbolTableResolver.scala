@@ -5,7 +5,7 @@ object SymbolTableResolver {
 
   def resolve(ast: Compiler.AST): Compiler.AST = {
     ast match {
-      case cl @ Structure.ClassStruct(className, classVarDec, subroutineDec, _) =>
+      case cl @ Structure.ClassStruct(className, classVarDec, subroutineDec, _, _) =>
         val clSt = classVarDec.foldLeft(SymbolTable.empty) {
           case (st, Structure.ClassVarDec(keyword, tp, varNames)) =>
             varNames.foldLeft(st) {
@@ -43,7 +43,8 @@ object SymbolTableResolver {
 
             sub.copy(symbolTable = Some(varsSt))
         }
-        cl.copy(symbolTable = Some(clSt), subroutineDec = subs)
+        val fSt = FunctionSymbolTable(subs.map(s => s.subroutineName -> s.keyword).toMap)
+        cl.copy(symbolTable = Some(clSt), subroutineDec = subs, functionSymbolTable = Some(fSt))
     }
   }
 }
