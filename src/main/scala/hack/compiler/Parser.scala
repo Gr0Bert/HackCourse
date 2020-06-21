@@ -95,7 +95,7 @@ object Parser {
 
     def classDeclaration[_: P] =
       P(
-        ss ~ "class" ~ s ~ identifier ~ ss ~
+        ss ~/ "class" ~ s ~ identifier ~ ss ~
           "{" ~ ss ~ classVarDeclaration.rep(sep = ss) ~ ss ~ subroutineDeclaration
           .rep(sep = ss) ~ ss ~ "}"
       ).map {

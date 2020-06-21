@@ -25,10 +25,6 @@ object Main extends App {
     val parsingResult = Parser.parseRaw(contents)
     parsingResult match {
       case Left((failureString, index, extra)) =>
-        println(index)
-        println(failureString)
-        println(extra.stack)
-        println(extra.trace(true))
         throw new RuntimeException(s"Failed to compile $path")
       case Right((_, expressions)) =>
         expressions
@@ -45,7 +41,7 @@ object Main extends App {
     writeToFile(outputFilePath, vmCommands.map(_.toString).mkString(System.lineSeparator()))
   }
 
-  val pathRaw = "C:\\Users\\Tanya\\IdeaProjects\\HackCourse\\jack\\11\\Square"
+  val pathRaw = "C:\\Users\\Tanya\\IdeaProjects\\HackCourse\\jack\\11\\Pong"
   val path = Path.of(pathRaw)
   if (Files.isDirectory(path)) {
     import scala.jdk.CollectionConverters._
